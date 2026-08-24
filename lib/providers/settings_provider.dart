@@ -439,6 +439,9 @@ class SettingsProvider extends AppChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('startDateFilter');
     await prefs.remove('endDateFilter');
+    await prefs.remove('user_name');
+    await prefs.remove('v1_data_imported');
+    await prefs.remove('recentSearches');
     EventBus.instance.emit(AppEvent.dataReset);
   }
 

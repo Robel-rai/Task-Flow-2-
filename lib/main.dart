@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'app_shell.dart';
-import 'screens/splash_screen.dart';
+import 'widgets/splash_page.dart';
 import 'database/app_database.dart';
 import 'database/v1_importer.dart';
 import 'providers/analytics_provider.dart';
@@ -18,7 +18,42 @@ import 'providers/theme_provider.dart';
 import 'providers/shortcuts_provider.dart';
 import 'theme/app_theme.dart';
 
+
+// -- Single-instance enforcement via Win32 named mutex --
+final DynamicLibrary _kernel32 = DynamicLibrary.open('kernel32.dll');
+
+typedef CreateMutexNative = Pointer<NativeType> Function(
+    Pointer<NativeType>, Bool, Pointer<Utf16>);
+typedef CreateMutexDart = Pointer<NativeType> Function(
+    Pointer<NativeType>, bool, Pointer<Utf16>);
+
+typedef GetLastErrorNative = Int32 Function();
+typedef GetLastErrorDart = int Function();
+
+typedef CloseHandleNative = Bool Function(Pointer<NativeType>);
+typedef CloseHandleDart = bool Function(Pointer<NativeType>);
+
+final CreateMutexDart _createMutex =
+    _kernel32.lookupFunction<CreateMutexNative, CreateMutexDart>('CreateMutexW');
+final GetLastErrorDart _getLastError =
+    _kernel32.lookupFunction<GetLastErrorNative, GetLastErrorDart>('GetLastError');
+final CloseHandleDart _closeHandle =
+    _kernel32.lookupFunction<CloseHandleNative, CloseHandleDart>('CloseHandle');
+
+const int _errorAlreadyExists = 183;
+
+bool _isAlreadyRunning() {
+  final name = 'TaskFlow_SingleInstance'.toNativeUtf16();
+  final mutex = _createMutex(nullptr, false, name);
+  final error = _getLastError();
+  calloc.free(name);
+  if (mutex != nullptr) _closeHandle(mutex);
+  return error == _errorAlreadyExists;
+}
+
 void main() async {
+  if (_isAlreadyRunning()) exit(0);
+
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize FFI for Windows desktop SQLite support.
@@ -31,6 +66,9 @@ void main() async {
 
   // One-time migration of v1 (task_recorder_pro.db) data, if present.
   await V1Importer().run();
+
+  // Remove known ghost/test data that may have been imported from v1.
+  await AppDatabase.cleanupGhostData();
 
   runApp(const TaskFlowApp());
 }
@@ -180,38 +218,11 @@ class _ThemeBuilder extends StatelessWidget {
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: key.mode,
-          home: const _OnboardingGate(),
+          home: const SplashPage(),
         );
       },
     );
   }
 }
 
-/// Checks SharedPreferences for the onboarding flag.
-/// Shows SplashScreen on first launch, AppShell otherwise.
-class _OnboardingGate extends StatelessWidget {
-  const _OnboardingGate();
 
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _checkOnboardingComplete(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          // Loading: show a minimal splash while the DB initializes
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        final complete = snapshot.data ?? false;
-        if (!complete) {
-          return const SplashScreen();
-        }
-        return const AppShell();
-      },
-    );
-  }
-
-  Future<bool> _checkOnboardingComplete() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('onboarding_complete') ?? false;
-  }
-}

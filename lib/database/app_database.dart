@@ -3,6 +3,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'migrations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'schema.dart';
 
 /// Lazy singleton database handle.
@@ -58,6 +59,40 @@ class AppDatabase {
   @visibleForTesting
   static void setDatabaseForTesting(Database db) {
     _db = db;
+  }
+
+  /// Removes known ghost/test data that may have been imported from
+  /// a legacy database. Runs once on startup.
+  /// Uses LIKE with LOWER() for case-insensitive matching.
+  static Future<void> cleanupGhostData() async {
+    final db = await database;
+    const ghostTaskPatterns = ['%test sample%', '%task sample%', '%anima%', '%ghost task%'];
+    const ghostProjectPatterns = ['%website redesign%'];
+    await db.transaction((txn) async {
+      for (final pattern in ghostTaskPatterns) {
+        final rows = await txn.query('tasks',
+            where: 'LOWER(title) LIKE ?', whereArgs: [pattern]);
+        for (final row in rows) {
+          final id = row['id'] as int;
+          await txn.delete('subtasks', where: 'task_id = ?', whereArgs: [id]);
+          await txn.delete('task_tags', where: 'task_id = ?', whereArgs: [id]);
+          await txn.delete('tasks', where: 'id = ?', whereArgs: [id]);
+        }
+      }
+      for (final pattern in ghostProjectPatterns) {
+        final rows = await txn.query('projects',
+            where: 'LOWER(title) LIKE ?', whereArgs: [pattern]);
+        for (final row in rows) {
+          final id = row['id'] as int;
+          await txn.delete('project_statuses', where: 'project_id = ?', whereArgs: [id]);
+          await txn.delete('projects', where: 'id = ?', whereArgs: [id]);
+        }
+      }
+    });
+
+    // Clear user_name from SharedPreferences so the app re-enters onboarding.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_name');
   }
 
   /// Wipes all user data rows (tasks, subtasks, routines, projects,

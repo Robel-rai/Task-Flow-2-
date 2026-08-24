@@ -68,13 +68,16 @@ class _TasksScreenState extends State<TasksScreen> {
   void _handleHighlightIntent() {
     final taskId = AppNavigator.instance.highlightTaskId;
     if (taskId == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       if (AppNavigator.instance.index != 1) {
         _handleHighlightIntent(); // shell hasn't switched yet; retry
         return;
       }
       AppNavigator.instance.consumeHighlightTask();
+      // Clear filters so the task is guaranteed to appear in the list.
+      await context.read<TasksProvider>().clearFilters();
+      if (!mounted) return;
       _flashHighlight(taskId);
     });
   }
@@ -99,8 +102,9 @@ class _TasksScreenState extends State<TasksScreen> {
     final task = await TaskRepository().getById(taskId);
     if (task == null || !mounted) return;
     // Clear any filters so the task is guaranteed to show once the dialog
-    // closes and the list renders.
-    context.read<TasksProvider>().clearFilters();
+    // closes and the list renders.  Await the refresh so the unfiltered
+    // list is available before we try to scroll to it.
+    await context.read<TasksProvider>().clearFilters();
     if (!mounted) return;
     await _openDialog(task);
     // After the editor closes, flash the card so the user sees exactly
@@ -110,7 +114,10 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   /// Briefly highlights [taskId]'s card and scrolls it into view.
-  void _flashHighlight(int taskId) {
+  ///
+  /// Retries a few times if the card hasn't been built yet (e.g. after
+  /// a filter clear the list rebuilds asynchronously).
+  void _flashHighlight(int taskId, {int retryCount = 0}) {
     _highlightTimer?.cancel();
     setState(() {
       _highlightedTaskId = taskId;
@@ -126,6 +133,12 @@ class _TasksScreenState extends State<TasksScreen> {
           duration: const Duration(milliseconds: 350),
           alignment: 0.5,
         );
+      } else if (retryCount < 5) {
+        // Card not built yet — schedule another attempt after a brief delay
+        // to let the list finish rebuilding from the filter clear.
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) _flashHighlight(taskId, retryCount: retryCount + 1);
+        });
       }
     });
     _highlightTimer = Timer(const Duration(seconds: 3), () {

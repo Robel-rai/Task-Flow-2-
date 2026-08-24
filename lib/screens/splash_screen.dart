@@ -12,9 +12,11 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   /// Clears the onboarding flag so the splash re-appears on next launch.
+  /// Also clears user_name so the app is forced through onboarding again.
   static Future<void> resetFlag() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_complete', false);
+    await prefs.remove('user_name');
   }
 
   @override
@@ -39,9 +41,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _finish() async {
-    // Mark onboarding as complete so next launch goes straight to the app.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_complete', true);
+    // Navigate to the onboarding screen. The onboarding_complete flag
+    // is only set to true when onboarding truly finishes.
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const OnboardingScreen()),

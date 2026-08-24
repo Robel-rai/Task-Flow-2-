@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/app_version.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_logo.dart';
 
 /// Sub-setting page showing app version, credits, and license info.
 class AboutPage extends StatelessWidget {
@@ -63,24 +63,7 @@ class AboutPage extends StatelessWidget {
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: SvgPicture.asset(
-                          'assets/icon/app_logo.svg',
-                          fit: BoxFit.contain,
-                          colorFilter: ColorFilter.mode(
-                            Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : Colors.black,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ),
+                      const AppLogo(size: 80),
                       const SizedBox(height: 16),
                       Text(
                         AppVersion.appName,

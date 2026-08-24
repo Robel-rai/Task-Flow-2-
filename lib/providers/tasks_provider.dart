@@ -142,7 +142,7 @@ class TasksProvider extends AppChangeNotifier {
     if (endStr != null) _endDateFilter = DateTime.tryParse(endStr);
   }
 
-  void clearFilters() {
+  Future<void> clearFilters() async {
     _searchQuery = '';
     _categoryFilter = null;
     _statusFilter = null;
@@ -150,7 +150,7 @@ class TasksProvider extends AppChangeNotifier {
     _startDateFilter = null;
     _endDateFilter = null;
     _tagFilter = null;
-    refresh();
+    await refresh();
   }
 
   // ─── Selection ───

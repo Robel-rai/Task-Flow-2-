@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../app_shell.dart';
+
 import '../providers/settings_provider.dart';
 import '../providers/tasks_provider.dart';
+import '../app_shell.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
@@ -25,7 +26,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _page = 0;
   String _name = '';
   ThemeMode _themeMode = ThemeMode.system;
-  bool _loadSample = true;
+  bool _loadSample = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _clearOldName();
+  }
+
+  /// Clears any previously stored user name so onboarding always
+  /// starts fresh and the old name never persists.
+  Future<void> _clearOldName() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_name');
+  }
 
   void _next() {
     if (_page < 2) {
@@ -44,11 +58,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_complete', true);
-    if (_name.isNotEmpty) await prefs.setString('user_name', _name);
+    // Always save the name — even if empty, to clear any old value.
+    await prefs.setString('user_name', _name);
     if (mounted) context.read<ThemeProvider>().setThemeMode(_themeMode);
     if (_loadSample && mounted) await _loadSampleTasks(context);
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AppShell()));
+    Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AppShell()),
+      );
   }
 
   Future<void> _loadSampleTasks(BuildContext context) async {

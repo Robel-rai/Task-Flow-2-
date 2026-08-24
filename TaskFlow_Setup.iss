@@ -6,12 +6,12 @@
 ;   2. Open this file in Inno Setup Compiler
 ;   3. Click Build → Compile (or press Ctrl+F9)
 ;
-; Output: install_output/TaskFlow_Setup_v2.0.0.exe
+; Output: install_output/Installer_TaskFlow2.exe
 
 #define MyAppName "TaskFlow"
 #define MyAppVersion "2.0.0"
 #define MyAppPublisher "Yared"
-#define MyAppURL "https://github.com/your-username/taskflow"
+#define MyAppURL "https://github.com/Robel-rai/Task-Flow-2-"
 #define MyAppExeName "taskflow.exe"
 
 ; Path to the Flutter release build output
@@ -26,7 +26,7 @@ AppPublisherURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=install_output
-OutputBaseFilename=TaskFlow_Setup_v{#MyAppVersion}
+OutputBaseFilename=Installer_TaskFlow2
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -35,13 +35,15 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 SetupLogging=yes
 
-; Appearance
-WizardImageFile=assets\icon\app_icon.bmp
-WizardSmallImageFile=assets\icon\app_icon.bmp
+; Installer exe icon (the .ico shown in Windows Explorer)
+SetupIconFile=windows\runner\resources\app_icon.ico
+
+; Installer wizard images (custom app icon)
+WizardImageFile=assets\icon\wizard.bmp
+WizardSmallImageFile=assets\icon\wizard_small.bmp
 
 ; Uninstaller
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
-UninstallDisplaySize=0
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -72,29 +74,3 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 [UninstallDelete]
 ; Clean up any files the app may have created in the install directory
 Type: filesandordirs; Name: "{app}"
-
-[Code]
-// Check if the app is currently running before installing/uninstalling
-function IsAppRunning(): Boolean;
-var
-  ResultCode: Integer;
-begin
-  Result := Exec('tasklist', '/FI "IMAGENAME eq {#MyAppExeName}" /NH', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Result := (Pos('{#MyAppExeName}', SysErrorMessage(ResultCode)) > 0);
-end;
-
-function InitializeSetup(): Boolean;
-begin
-  Result := True;
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  ResultCode: Integer;
-begin
-  if CurStep = ssPostInstall then
-  begin
-    // Ensure the install directory exists
-    ForceDirectories(ExpandConstant('{app}'));
-  end;
-end;

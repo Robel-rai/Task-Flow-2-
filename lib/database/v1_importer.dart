@@ -117,6 +117,8 @@ class V1Importer {
         final projectRows =
             names.contains('projects') ? await v1.query('projects') : [];
         for (final row in projectRows) {
+          final title = (row['title'] as String?) ?? '';
+          if (_skipProjectTitles.contains(title.toLowerCase())) continue;
           await txn.insert('projects', {
             'id': row['id'],
             'title': row['title'],
@@ -131,6 +133,8 @@ class V1Importer {
         // Tasks.
         final taskRows = await v1.query('tasks');
         for (final row in taskRows) {
+          final title = (row['title'] as String?) ?? '';
+          if (_skipTitles.contains(title.toLowerCase())) continue;
           final categoryName = (row['category'] as String?) ?? 'General';
           var categoryId = categoryIds[categoryName];
           if (categoryId == null) {
@@ -243,6 +247,22 @@ class V1Importer {
       return const [];
     }
   }
+
+  /// Titles that should never be imported from v1 — they are
+  /// development/test placeholders that shouldn't appear in user data.
+  static const _skipTitles = {
+    'test sample 1',
+    'test sample 2',
+    'task sample 1',
+    'task sample 2',
+    'anima',
+    'ghost task',
+  };
+
+  /// Project titles that should never be imported from v1.
+  static const _skipProjectTitles = {
+    'website redesign',
+  };
 
   /// Candidate legacy DB locations, checked in order:
   /// Documents (v1 debug) and next to the exe (v1 release).

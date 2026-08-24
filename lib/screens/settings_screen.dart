@@ -8,8 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../database/app_database.dart';
-import '../components/notifications/due_date_popup.dart';
-import '../components/notifications/pending_tasks_popup.dart';
 import '../components/settings/about_page.dart';
 import '../components/settings/categories_page.dart';
 import '../components/settings/customization_page.dart';
@@ -219,43 +217,6 @@ class _SettingsHomeState extends State<_SettingsHome> {
     );
     if (uri == null || !mounted) return;
     _snack('Exported');
-  }
-
-  // ─── Test notification helpers ───
-
-  Future<void> _testDueDateNotification(BuildContext context) async {
-    final tasks = context.read<TasksProvider>().tasks;
-    if (tasks.isEmpty) {
-      _snack('No tasks to test — create a task first');
-      return;
-    }
-    // Pick the first non-completed task with a due date, or fall back to the
-    // first task and use a mock due date.
-    final testTask = tasks.firstWhere(
-      (t) => t.status != 'Completed' && t.dueDate != null,
-      orElse: () => tasks.first,
-    );
-    // Mark as reminded so the auto-check doesn't re-fire immediately
-    _notifications.markTaskReminded(testTask.id!);
-    // Fire toast
-    await _notifications.showDueDateToast(testTask);
-    if (!mounted) return;
-    // Fire in-app popup
-    await DueDatePopup.show(context, [testTask]);
-  }
-
-  Future<void> _testPendingTasksNotification(BuildContext context) async {
-    final allTasks = context.read<TasksProvider>().tasks;
-    final pendingTasks = allTasks.where((t) => t.status == 'Pending').toList();
-    if (pendingTasks.isEmpty) {
-      _snack('No pending tasks to test — create a pending task first');
-      return;
-    }
-    // Fire toast
-    await _notifications.showPendingTasksToast(pendingTasks.length);
-    if (!mounted) return;
-    // Fire in-app popup
-    await PendingTasksPopup.show(context, pendingTasks);
   }
 
   String _formatScheduleSummary() {
@@ -1030,6 +991,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
     bool resetCategories = false;
     bool resetProjects = false;
     bool resetTasks = false;
+    bool resetRoutines = false;
     bool resetFocus = false;
 
     final confirmed = await showDialog<bool>(
@@ -1078,6 +1040,13 @@ class _SettingsHomeState extends State<_SettingsHome> {
                     colors: colors,
                   ),
                   _ResetCheckbox(
+                    label: 'Routines',
+                    subtitle: 'All routines and streaks',
+                    value: resetRoutines,
+                    onChanged: (v) => setDialogState(() => resetRoutines = v ?? false),
+                    colors: colors,
+                  ),
+                  _ResetCheckbox(
                     label: 'Focus Sessions',
                     subtitle: 'All focus session history',
                     value: resetFocus,
@@ -1096,7 +1065,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                     backgroundColor: AppTheme.rose,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: (!resetCategories && !resetProjects && !resetTasks && !resetFocus)
+                  onPressed: (!resetCategories && !resetProjects && !resetTasks && !resetRoutines && !resetFocus)
                       ? null
                       : () => Navigator.pop(ctx, true),
                   child: const Text('Delete Selected'),
@@ -1117,6 +1086,9 @@ class _SettingsHomeState extends State<_SettingsHome> {
         await txn.delete('task_tags');
         await txn.delete('subtasks');
         await txn.delete('tasks');
+      }
+      if (resetRoutines) {
+        await txn.delete('routines');
       }
       if (resetProjects) {
         await txn.delete('project_statuses');
@@ -1483,7 +1455,9 @@ class _SettingsHomeState extends State<_SettingsHome> {
                         title: const Text('Show Splash Screen', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                         subtitle: const Text('Replay the app introduction'),
                         trailing: Icon(Icons.chevron_right, color: colors.textTertiary),
-                        onTap: () async { await SplashScreen.resetFlag(); if (context.mounted) { Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const SplashScreen())); } },
+                        onTap: () async { await SplashScreen.resetFlag(); if (context.mounted) { Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const SplashScreen()),
+          ); } },
                       ),
                       const Divider(height: 1),
                       ListTile(
@@ -1491,7 +1465,9 @@ class _SettingsHomeState extends State<_SettingsHome> {
                         title: const Text('Show Onboarding', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                         subtitle: const Text('Replay the setup wizard'),
                         trailing: Icon(Icons.chevron_right, color: colors.textTertiary),
-                        onTap: () async { await OnboardingScreen.resetFlag(); if (context.mounted) { Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const OnboardingScreen())); } },
+                        onTap: () async { await OnboardingScreen.resetFlag(); if (context.mounted) { Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const SplashScreen()),
+          ); } },
                       ),
                     ],
                   ),
@@ -1607,36 +1583,12 @@ class _SettingsHomeState extends State<_SettingsHome> {
                                 : colors.textTertiary,
                           ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_dueDateReminders)
-                              TextButton(
-                                onPressed: () => _testDueDateNotification(context),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(
-                                  'Test',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.rose,
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(width: 4),
-                            Switch(
-                              value: _dueDateReminders,
-                              onChanged: (v) async {
-                                setState(() => _dueDateReminders = v);
-                                await _notifications.setDueDateEnabled(v);
-                              },
-                            ),
-                          ],
+                        trailing: Switch(
+                          value: _dueDateReminders,
+                          onChanged: (v) async {
+                            setState(() => _dueDateReminders = v);
+                            await _notifications.setDueDateEnabled(v);
+                          },
                         ),
                         onTap: _dueDateReminders
                             ? () => _showDueDateScheduleDialog(context)
@@ -1660,36 +1612,12 @@ class _SettingsHomeState extends State<_SettingsHome> {
                                 : colors.textTertiary,
                           ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_pendingTasksAlerts)
-                              TextButton(
-                                onPressed: () => _testPendingTasksNotification(context),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(
-                                  'Test',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.indigo,
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(width: 4),
-                            Switch(
-                              value: _pendingTasksAlerts,
-                              onChanged: (v) async {
-                                setState(() => _pendingTasksAlerts = v);
-                                await _notifications.setPendingTasksEnabled(v);
-                              },
-                            ),
-                          ],
+                        trailing: Switch(
+                          value: _pendingTasksAlerts,
+                          onChanged: (v) async {
+                            setState(() => _pendingTasksAlerts = v);
+                            await _notifications.setPendingTasksEnabled(v);
+                          },
                         ),
                         onTap: _pendingTasksAlerts
                             ? () => _showPendingScheduleDialog(context)
