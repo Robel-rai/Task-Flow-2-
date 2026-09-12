@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:taskflow/components/calendar/week_view.dart';
 import 'package:taskflow/database/app_database.dart';
 import 'package:taskflow/main.dart';
 
@@ -12,7 +13,7 @@ void main() {
   late Database testDb;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({'onboarding_complete': true});
+    SharedPreferences.setMockInitialValues({'onboarding_complete': true, 'user_name': 'Test User'});
     testDb = await createTestDb();
     AppDatabase.setDatabaseForTesting(testDb);
   });
@@ -38,9 +39,12 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.runAsync(() async {
       await tester.pumpWidget(const TaskFlowApp());
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      // The splash page uses Future.delayed(2s) in initState which runs
+      // inside runAsync, so it uses the real clock. Wait 3 real seconds.
+      await Future<void>.delayed(const Duration(seconds: 3));
       await tester.pump();
     });
+    await settle(tester);
     await tester.tap(find.text('Calendar'));
     await settle(tester);
   }
@@ -117,7 +121,8 @@ void main() {
     // Long-press the chip and drop it on the neighboring day column.
     final gesture = await tester.startGesture(tester.getCenter(find.text('Drag me')));
     await tester.pump(const Duration(milliseconds: 700)); // exceed long-press
-    await gesture.moveTo(tester.getCenter(find.text('${target.day}')));
+    await gesture.moveTo(tester.getCenter(
+        find.descendant(of: find.byType(WeekView), matching: find.text('${target.day}'))));
     await tester.pump(const Duration(milliseconds: 150));
     await gesture.up();
     await settle(tester);

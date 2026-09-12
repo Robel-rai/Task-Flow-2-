@@ -4,6 +4,7 @@ import '../core/event_bus.dart';
 import '../models/focus_session.dart';
 import '../repositories/focus_session_repository.dart';
 import '../services/focus_service.dart';
+import '../services/ui_sound_service.dart';
 
 /// Owns the active focus session and today's session history.
 class FocusProvider extends AppChangeNotifier {
@@ -13,6 +14,7 @@ class FocusProvider extends AppChangeNotifier {
 
   final FocusService _service;
   final FocusSessionRepository _sessions;
+  final UiSoundService _sounds = UiSoundService.instance;
 
   FocusSession? _activeSession;
   FocusSession? get activeSession => _activeSession;
@@ -96,6 +98,7 @@ class FocusProvider extends AppChangeNotifier {
   Future<FocusSession> start({int? taskId}) async {
     final session = await _service.start(taskId: taskId);
     EventBus.instance.emit(AppEvent.focusSessionStarted);
+    _sounds.focusStarted();
     await refreshToday();
     await _refreshVisible();
     return session;
@@ -106,6 +109,20 @@ class FocusProvider extends AppChangeNotifier {
     if (session == null) return null;
     final stopped = await _service.stop(session);
     EventBus.instance.emit(AppEvent.focusSessionStopped);
+    _sounds.focusStopped();
+    await refreshToday();
+    await _refreshVisible();
+    return stopped;
+  }
+
+  /// Stops the session because its target duration was reached — plays
+  /// the dedicated completion cue instead of the early-stop one.
+  Future<FocusSession?> complete() async {
+    final session = _activeSession;
+    if (session == null) return null;
+    final stopped = await _service.stop(session);
+    EventBus.instance.emit(AppEvent.focusSessionStopped);
+    _sounds.focusCompleted();
     await refreshToday();
     await _refreshVisible();
     return stopped;
@@ -116,6 +133,7 @@ class FocusProvider extends AppChangeNotifier {
     final session = _activeSession;
     if (session == null) return null;
     final paused = await _service.pause(session);
+    _sounds.focusPaused();
     await refreshToday();
     await _refreshVisible();
     return paused;
@@ -126,6 +144,7 @@ class FocusProvider extends AppChangeNotifier {
     final session = _activeSession;
     if (session == null || !session.isPaused) return null;
     final resumed = await _service.resume(session);
+    _sounds.focusResumed();
     await refreshToday();
     await _refreshVisible();
     return resumed;

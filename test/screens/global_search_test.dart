@@ -19,7 +19,7 @@ void main() {
   late ProjectRepository projectRepo;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({'onboarding_complete': true});
+    SharedPreferences.setMockInitialValues({'onboarding_complete': true, 'user_name': 'Test User'});
     testDb = await createTestDb();
     AppDatabase.setDatabaseForTesting(testDb);
     taskRepo = TaskRepository(db: testDb);
@@ -50,9 +50,12 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.runAsync(() async {
       await tester.pumpWidget(const TaskFlowApp());
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      // The splash page uses Future.delayed(2s) in initState which runs
+      // inside runAsync, so it uses the real clock. Wait 3 real seconds.
+      await Future<void>.delayed(const Duration(seconds: 3));
       await tester.pump();
     });
+    await settle(tester);
   }
 
   /// Opens the global search panel, types [query], and waits for results.

@@ -13,7 +13,7 @@ void main() {
   late Database testDb;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({'onboarding_complete': true});
+    SharedPreferences.setMockInitialValues({'onboarding_complete': true, 'user_name': 'Test User'});
     testDb = await createTestDb();
     AppDatabase.setDatabaseForTesting(testDb);
   });
@@ -41,9 +41,12 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.runAsync(() async {
       await tester.pumpWidget(const TaskFlowApp());
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      // The splash page uses Future.delayed(2s) in initState which runs
+      // inside runAsync, so it uses the real clock. Wait 3 real seconds.
+      await Future<void>.delayed(const Duration(seconds: 3));
       await tester.pump();
     });
+    await settle(tester);
   }
 
   testWidgets('task card shows badges, edit/delete, and expandable subtasks',
@@ -74,9 +77,9 @@ void main() {
     expect(find.text('Card task'), findsOneWidget);
     expect(find.text('General'), findsOneWidget);
     expect(find.text('High'), findsOneWidget);
-    expect(find.text('Pending'), findsOneWidget);
-    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    expect(find.descendant(of: find.byType(TaskCard), matching: find.text('Pending')), findsOneWidget);
+    expect(find.descendant(of: find.byType(TaskCard), matching: find.byIcon(Icons.edit_outlined)), findsOneWidget);
+    expect(find.descendant(of: find.byType(TaskCard), matching: find.byIcon(Icons.delete_outline)), findsOneWidget);
 
     // Expand the card.
     await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
@@ -151,19 +154,19 @@ void main() {
     await tester.tap(find.text('Step 1'));
     await settle(tester);
     expect(find.text('1/2 done'), findsOneWidget);
-    expect(find.text('Pending'), findsOneWidget);
+    expect(find.descendant(of: find.byType(TaskCard), matching: find.text('Pending')), findsOneWidget);
 
     // Click the second subtask: task auto-completes.
     await tester.tap(find.text('Step 2'));
     await settle(tester);
     expect(find.text('2/2 done'), findsOneWidget);
-    expect(find.text('Completed'), findsOneWidget);
+    expect(find.descendant(of: find.byType(TaskCard), matching: find.text('Completed')), findsOneWidget);
 
     // Un-checking one subtask reopens the completed task (as In Progress).
     await tester.tap(find.text('Step 1'));
     await settle(tester);
     expect(find.text('1/2 done'), findsOneWidget);
-    expect(find.text('In Progress'), findsOneWidget);
+    expect(find.descendant(of: find.byType(TaskCard), matching: find.text('In Progress')), findsOneWidget);
 
     // The toggles were persisted.
     final rows = await tester.runAsync(

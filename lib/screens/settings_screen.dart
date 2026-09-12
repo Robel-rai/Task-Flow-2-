@@ -14,6 +14,7 @@ import '../components/settings/customization_page.dart';
 import '../components/settings/focus_preferences_page.dart';
 import '../components/settings/nav_order_page.dart';
 import '../components/settings/shortcuts_page.dart';
+import '../components/settings/ui_sound_page.dart';
 import '../screens/splash_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../core/event_bus.dart';
@@ -42,6 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showFocusPreferences = false;
   bool _showAbout = false;
   bool _showShortcuts = false;
+  bool _showUiSound = false;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +72,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onBack: () => setState(() => _showShortcuts = false),
       );
     }
+    if (_showUiSound) {
+      return UiSoundPage(
+        onBack: () => setState(() => _showUiSound = false),
+      );
+    }
     if (_showAbout) {
       return AboutPage(
         onBack: () => setState(() => _showAbout = false),
@@ -82,6 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onOpenFocusPreferences: () => setState(() => _showFocusPreferences = true),
       onOpenAbout: () => setState(() => _showAbout = true),
       onOpenShortcuts: () => setState(() => _showShortcuts = true),
+      onOpenUiSound: () => setState(() => _showUiSound = true),
     );
   }
 }
@@ -94,6 +102,7 @@ class _SettingsHome extends StatefulWidget {
     required this.onOpenFocusPreferences,
     required this.onOpenAbout,
     required this.onOpenShortcuts,
+    required this.onOpenUiSound,
   });
 
   final VoidCallback onOpenCategories;
@@ -102,6 +111,7 @@ class _SettingsHome extends StatefulWidget {
   final VoidCallback onOpenFocusPreferences;
   final VoidCallback onOpenAbout;
   final VoidCallback onOpenShortcuts;
+  final VoidCallback onOpenUiSound;
 
   @override
   State<_SettingsHome> createState() => _SettingsHomeState();
@@ -114,6 +124,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
   bool _routineReminders = true;
   bool _dueDateReminders = true;
   bool _pendingTasksAlerts = true;
+  bool _completionConfirmations = true;
   bool _importing = false;
 
   // ── Pending tasks schedule ──
@@ -140,6 +151,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
     final routinesOn = await _notifications.routinesEnabled;
     final dueDateOn = await _notifications.dueDateEnabled;
     final pendingOn = await _notifications.pendingTasksEnabled;
+    final completionOn = await _notifications.completionEnabled;
     final startH = await _notifications.pendingStartHour;
     final startM = await _notifications.pendingStartMinute;
     final interval = await _notifications.pendingIntervalHours;
@@ -155,6 +167,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
       _routineReminders = routinesOn;
       _dueDateReminders = dueDateOn;
       _pendingTasksAlerts = pendingOn;
+      _completionConfirmations = completionOn;
       _pendingStartHour = startH;
       _pendingStartMinute = startM;
       _pendingIntervalHours = interval;
@@ -225,7 +238,8 @@ class _SettingsHomeState extends State<_SettingsHome> {
     final ampm = h >= 12 ? 'PM' : 'AM';
     final h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
     final timeStr = '$h12:${m.toString().padLeft(2, '0')} $ampm';
-    return '$timeStr, every ${_pendingIntervalHours}h, $_pendingRepeatCount times';
+    final pendingIntervalLabel = _pendingIntervalHours == 0 ? '30m' : '${_pendingIntervalHours}h';
+    return '$timeStr, every $pendingIntervalLabel, $_pendingRepeatCount times';
   }
 
   Future<void> _showPendingScheduleDialog(BuildContext context) async {
@@ -526,7 +540,8 @@ class _SettingsHomeState extends State<_SettingsHome> {
         : _dueDateAdvanceMinutes >= 1440
             ? '${_dueDateAdvanceMinutes ~/ 1440}d before'
             : '${_dueDateAdvanceMinutes ~/ 60}h before';
-    return '$timeStr, every ${_dueDateIntervalHours}h, $_dueDateRepeatCount times ($advanceStr)';
+    final ddIntervalLabel = _dueDateIntervalHours == 0 ? '30m' : '${_dueDateIntervalHours}h';
+    return '$timeStr, every $ddIntervalLabel, $_dueDateRepeatCount times ($advanceStr)';
   }
 
   Future<void> _showDueDateScheduleDialog(BuildContext context) async {
@@ -979,9 +994,10 @@ class _SettingsHomeState extends State<_SettingsHome> {
     if (confirmed != true) return;
     final counts = await BackupService().importJson(content);
     if (!mounted) return;
-    await context.read<TasksProvider>().refresh();
+    // Fan out to every data provider (Tasks, Projects, Calendar, Routines,
+    // Analytics, Focus) — they all re-query on this event.
+    EventBus.instance.emit(AppEvent.dataReset);
     _snack('Restored ${counts.values.fold<int>(0, (a, b) => a + b)} rows across ${counts.length} tables');
-    await context.read<TasksProvider>().refresh();
   }
 
   // ── Reset Data (checkboxes) ──
@@ -1437,6 +1453,19 @@ class _SettingsHomeState extends State<_SettingsHome> {
                             Icon(Icons.chevron_right, color: colors.textTertiary),
                         onTap: widget.onOpenFocusPreferences,
                       ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(Icons.music_note_outlined,
+                            color: AppTheme.primary),
+                        title: const Text('UI Sound & Customization',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600)),
+                        subtitle: const Text(
+                            'Feedback sounds for actions and ongoing states'),
+                        trailing:
+                            Icon(Icons.chevron_right, color: colors.textTertiary),
+                        onTap: widget.onOpenUiSound,
+                      ),
                     ],
                   ),
                 ),
@@ -1622,6 +1651,21 @@ class _SettingsHomeState extends State<_SettingsHome> {
                         onTap: _pendingTasksAlerts
                             ? () => _showPendingScheduleDialog(context)
                             : null,
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        secondary: const Icon(Icons.check_circle_outline,
+                            color: AppTheme.emerald),
+                        title: const Text('Completion confirmations',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600)),
+                        subtitle: const Text(
+                            'Notify me when I mark a task as completed'),
+                        value: _completionConfirmations,
+                        onChanged: (v) async {
+                          setState(() => _completionConfirmations = v);
+                          await _notifications.setCompletionEnabled(v);
+                        },
                       ),
                     ],
                   ),

@@ -147,7 +147,7 @@ class _GlobalSearchOverlayState extends State<GlobalSearchOverlay> {
     final id = task.id;
     if (id == null) return;
     _search.remember(_search.query);
-    AppNavigator.instance.highlightTaskOnTasksPage(id);
+    AppNavigator.instance.openTaskOnTasksPage(id);
     widget.onClose();
   }
 

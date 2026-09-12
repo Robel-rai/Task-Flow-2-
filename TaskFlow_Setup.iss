@@ -10,7 +10,7 @@
 
 #define MyAppName "TaskFlow"
 #define MyAppVersion "2.0.0"
-#define MyAppPublisher "Yared"
+#define MyAppPublisher "Robel"
 #define MyAppURL "https://github.com/Robel-rai/Task-Flow-2-"
 #define MyAppExeName "taskflow.exe"
 
@@ -23,7 +23,10 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
+; Per-user install location so the app directory is writable — the
+; release database lives in {app}\DB next to the exe. {autopf} would
+; allow an elevated run to land in Program Files, which is read-only.
+DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=install_output
 OutputBaseFilename=Installer_TaskFlow2
@@ -32,15 +35,14 @@ SolidCompression=yes
 WizardStyle=modern
 WizardSizePercent=110
 PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
 SetupLogging=yes
 
 ; Installer exe icon (the .ico shown in Windows Explorer)
-SetupIconFile=windows\runner\resources\app_icon.ico
+SetupIconFile=windows\runner\resources\main_app_icon.ico
 
 ; Installer wizard images (custom app icon)
 WizardImageFile=assets\icon\wizard.bmp
-WizardSmallImageFile=assets\icon\wizard_small.bmp
+WizardSmallImageFile=assets\icon\app_icon.png
 
 ; Uninstaller
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
@@ -71,6 +73,6 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Fil
 ; Launch the app after installation
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
-[UninstallDelete]
-; Clean up any files the app may have created in the install directory
-Type: filesandordirs; Name: "{app}"
+; NOTE: no [UninstallDelete] section on purpose. The uninstaller removes
+; the files Setup installed but must NOT wipe {app}\DB, which holds the
+; user's task database. Leftover files stay in the folder after uninstall.

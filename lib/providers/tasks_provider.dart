@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/app_change_notifier.dart';
@@ -5,17 +7,22 @@ import '../core/event_bus.dart';
 import '../models/subtask.dart';
 import '../models/task.dart';
 import '../repositories/tag_repository.dart';
+import '../services/notification_service.dart';
 import '../services/task_service.dart';
+import '../services/ui_sound_service.dart';
 
 /// Owns the visible task list, its filters, and every task mutation.
 ///
 /// Mutations go through [TaskService] (business rules) and emit
 /// [AppEvent]s so other providers can refresh lazily.
 class TasksProvider extends AppChangeNotifier {
-  TasksProvider({TaskService? taskService})
-      : _taskService = taskService ?? TaskService();
+  TasksProvider({TaskService? taskService, NotificationService? notifications})
+      : _taskService = taskService ?? TaskService(),
+        _notifications = notifications ?? NotificationService();
 
   final TaskService _taskService;
+  final NotificationService _notifications;
+  final UiSoundService _sounds = UiSoundService.instance;
 
   List<Task> _tasks = [];
   List<Task> get tasks => _tasks;
@@ -58,6 +65,7 @@ class TasksProvider extends AppChangeNotifier {
     final bus = EventBus.instance;
     bus.subscribe(AppEvent.focusSessionStarted, refresh);
     bus.subscribe(AppEvent.focusSessionStopped, refresh);
+    bus.subscribe(AppEvent.dataReset, refresh);
   }
 
   /// Restores the persisted date filter. When nothing was saved the
@@ -174,6 +182,7 @@ class TasksProvider extends AppChangeNotifier {
     final saved = await _taskService.create(task, subtasks: subtasks);
     await refresh();
     EventBus.instance.emit(AppEvent.taskCreated);
+    _sounds.taskSaved();
     return saved;
   }
 
@@ -181,16 +190,19 @@ class TasksProvider extends AppChangeNotifier {
     final saved = await _taskService.update(task, subtasks: subtasks);
     await refresh();
     EventBus.instance.emit(AppEvent.taskUpdated);
+    _sounds.taskSaved();
     return saved;
   }
 
   Future<Task> completeTask(Task task) async {
     final updated = await _taskService.complete(task);
     await refresh();
+    unawaited(_notifyCompletion([task]));
     EventBus.instance.emitAll([
       AppEvent.taskCompleted,
       if (task.projectId != null) AppEvent.projectStatusChanged,
     ]);
+    _sounds.taskCompleted();
     return updated;
   }
 
@@ -209,6 +221,7 @@ class TasksProvider extends AppChangeNotifier {
     _selectedIds.remove(id);
     await refresh();
     EventBus.instance.emit(AppEvent.taskDeleted);
+    _sounds.taskDeleted();
   }
 
   Future<void> trashTask(Task task) async {
@@ -216,6 +229,7 @@ class TasksProvider extends AppChangeNotifier {
     _selectedIds.remove(task.id);
     await refresh();
     EventBus.instance.emit(AppEvent.taskTrashed);
+    _sounds.taskDeleted();
   }
 
   Future<void> restoreTask(Task task) async {
@@ -263,12 +277,15 @@ class TasksProvider extends AppChangeNotifier {
 
   /// Completes several tasks in one pass (single refresh + event).
   Future<void> completeTasks(Iterable<Task> tasks) async {
-    for (final task in tasks) {
+    final completed = List<Task>.from(tasks);
+    for (final task in completed) {
       await _taskService.complete(task);
     }
     _selectedIds.clear();
     await refresh();
+    unawaited(_notifyCompletion(completed));
     EventBus.instance.emit(AppEvent.taskCompleted);
+    _sounds.taskCompleted();
   }
 
   /// Permanently deletes several tasks in one pass.
@@ -297,6 +314,20 @@ class TasksProvider extends AppChangeNotifier {
 
   // ─── Trash ───
 
+  /// Fires one Windows toast per completed task (best-effort, never
+  /// blocks the mutation). Gated by the "completion confirmations"
+  /// notification setting.
+  Future<void> _notifyCompletion(Iterable<Task> tasks) async {
+    try {
+      if (!await _notifications.completionEnabled) return;
+      for (final task in tasks) {
+        await _notifications.showTaskCompletedToast(task);
+      }
+    } catch (_) {
+      // Notifications must never break task completion.
+    }
+  }
+
   Future<List<Task>> getTrashed() => _taskService.getTrashed();
 
   Future<void> permanentDelete(int id) async {
@@ -304,6 +335,7 @@ class TasksProvider extends AppChangeNotifier {
     _selectedIds.remove(id);
     await refresh();
     EventBus.instance.emit(AppEvent.taskDeleted);
+    _sounds.taskDeleted();
   }
 
   Future<void> emptyTrash() async {
@@ -311,5 +343,6 @@ class TasksProvider extends AppChangeNotifier {
     _selectedIds.clear();
     await refresh();
     EventBus.instance.emit(AppEvent.taskDeleted);
+    _sounds.taskDeleted();
   }
 }

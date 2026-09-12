@@ -1,6 +1,7 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
+#include <shobjidl_core.h>
 
 #include "flutter_window.h"
 #include "utils.h"
@@ -12,6 +13,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {
     CreateAndAttachConsole();
   }
+
+  // Register an AppUserModelID so Windows toast notifications work.
+  // Must match the applicationId used in NotificationService._toast.
+  ::SetCurrentProcessExplicitAppUserModelID(L"TaskFlow.App");
 
   // Initialize COM, so that it is available for use in the library and/or
   // plugins.

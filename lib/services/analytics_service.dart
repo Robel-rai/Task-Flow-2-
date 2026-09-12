@@ -27,7 +27,8 @@ class AnalyticsSummary {
     this.mostTimeConsumingTaskTitle,
     this.mostTimeConsumingTaskSeconds = 0,
     required this.insight,
-  });
+    int? focusMinutesThisWeek,
+  }) : focusMinutesThisWeek = focusMinutesThisWeek ?? 0;
 
   /// Composite 0–100: half completion rate, half focus consistency.
   final int productivityScore;
@@ -72,14 +73,11 @@ class AnalyticsSummary {
   /// Dynamic motivational insight based on data patterns.
   final String insight;
 
-  int get focusMinutesThisWeek {
-    var total = 0;
-    final today = _dateOnly(DateTime.now());
-    for (var i = 6; i >= 0; i--) {
-      total += focusMinutesPerDay[_dayKey(_addDays(today, -i))] ?? 0;
-    }
-    return total;
-  }
+  /// Focus minutes for the 7-day window ending on the `now` reference date
+  /// passed to [AnalyticsService.loadSummary].  Stored eagerly so the value
+  /// stays consistent with the `now` parameter (unlike the old getter which
+  /// used [DateTime.now] directly).
+  final int focusMinutesThisWeek;
 }
 
 /// Batched analytics queries — one SQL statement per metric, run in
@@ -196,6 +194,7 @@ class AnalyticsService {
       mostTimeConsumingTaskTitle: mostTimeTask?.title,
       mostTimeConsumingTaskSeconds: mostTimeTask?.timeSpentSeconds ?? 0,
       insight: insight,
+      focusMinutesThisWeek: focusThisWeek,
     );
   }
 

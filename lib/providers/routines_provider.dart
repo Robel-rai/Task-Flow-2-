@@ -7,6 +7,7 @@ import '../models/routine.dart';
 import '../repositories/routine_repository.dart';
 import '../services/notification_service.dart';
 import '../services/routine_service.dart';
+import '../services/ui_sound_service.dart';
 
 /// Owns the routine list, applying the daily streak reset on refresh.
 class RoutinesProvider extends AppChangeNotifier {
@@ -52,6 +53,7 @@ class RoutinesProvider extends AppChangeNotifier {
       if (hour == null || minute == null) continue;
       if (now.hour != hour || now.minute != minute) continue;
       if (await _notifications.shouldShowRoutineReminder(routine, now: now)) {
+        UiSoundService.instance.reminderFired();
         await _notifications.showToast(
             title: 'Routine reminder', body: routine.title);
       }

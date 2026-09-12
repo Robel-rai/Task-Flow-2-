@@ -28,6 +28,39 @@ class TaskDialogResult {
   final List<int> tagIds;
 }
 
+/// The one visual style for every dropdown in the task dialog.
+///
+/// [DropdownButtonFormField.isExpanded] is essential: without it the
+/// internal Row sizes itself to the selected item's natural text width,
+/// and a long project/category title overflows the field and throws a
+/// RenderFlex overflow. The selected label is ellipsized instead.
+class TaskDropdown<T> extends StatelessWidget {
+  const TaskDropdown({
+    super.key,
+    required this.labelText,
+    required this.items,
+    required this.onChanged,
+    this.initialValue,
+  });
+
+  final String labelText;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  final T? initialValue;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<T>(
+      initialValue: initialValue,
+      isExpanded: true,
+      borderRadius: BorderRadius.circular(12),
+      decoration: InputDecoration(labelText: labelText, isDense: true),
+      items: items,
+      onChanged: onChanged,
+    );
+  }
+}
+
 /// Create/edit dialog for a task. Pass [task] = null to create.
 class TaskDialog extends StatefulWidget {
   const TaskDialog({super.key, this.task});
@@ -356,12 +389,9 @@ class _TaskDialogState extends State<TaskDialog> {
                     Row(
                       children: [
                         Expanded(
-                          child: DropdownButtonFormField<int?>(
+                          child: TaskDropdown<int?>(
                             initialValue: _categoryId,
-                            isExpanded: true,
-                            borderRadius: BorderRadius.circular(12),
-                            decoration: const InputDecoration(
-                                labelText: 'Category', isDense: true),
+                            labelText: 'Category',
                             items: [
                               const DropdownMenuItem<int?>(
                                   value: null, child: Text('General')),
@@ -376,6 +406,7 @@ class _TaskDialogState extends State<TaskDialog> {
                                             const SizedBox(width: 8),
                                             Flexible(
                                               child: Text(c.name,
+                                                  maxLines: 1,
                                                   overflow: TextOverflow
                                                       .ellipsis),
                                             ),
@@ -388,11 +419,9 @@ class _TaskDialogState extends State<TaskDialog> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: DropdownButtonFormField<String>(
+                          child: TaskDropdown<String>(
                             initialValue: _priority,
-                            borderRadius: BorderRadius.circular(12),
-                            decoration: const InputDecoration(
-                                labelText: 'Priority', isDense: true),
+                            labelText: 'Priority',
                             items: _priorities
                                 .map((p) => DropdownMenuItem<String>(
                                     value: p, child: Text(p)))
@@ -407,16 +436,13 @@ class _TaskDialogState extends State<TaskDialog> {
                     Row(
                       children: [
                         Expanded(
-                          child: DropdownButtonFormField<String>(
+                          child: TaskDropdown<String>(
                             // Recreate when the status changes
                             // programmatically (project switch / snap) so
                             // the dropdown always shows the current value.
                             key: ValueKey('status-$_status'),
                             initialValue: _status,
-                            isExpanded: true,
-                            borderRadius: BorderRadius.circular(12),
-                            decoration: const InputDecoration(
-                                labelText: 'Status', isDense: true),
+                            labelText: 'Status',
                             items: _statusOptions
                                 .map((s) => DropdownMenuItem<String>(
                                     value: s, child: Text(s)))
@@ -427,18 +453,18 @@ class _TaskDialogState extends State<TaskDialog> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: DropdownButtonFormField<int?>(
+                          child: TaskDropdown<int?>(
                             initialValue: _projectId,
-                            borderRadius: BorderRadius.circular(12),
-                            decoration: const InputDecoration(
-                                labelText: 'Project', isDense: true),
+                            labelText: 'Project',
                             items: [
                               const DropdownMenuItem<int?>(
                                   value: null, child: Text('No project')),
                               ...projects.projectList
                                   .map((p) => DropdownMenuItem<int?>(
                                         value: p.id,
-                                        child: Text(p.title),
+                                        child: Text(p.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis),
                                       )),
                             ],
                             onChanged: (v) {

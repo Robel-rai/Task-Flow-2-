@@ -12,7 +12,7 @@ void main() {
   late Database testDb;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({'onboarding_complete': true});
+    SharedPreferences.setMockInitialValues({'onboarding_complete': true, 'user_name': 'Test User'});
     testDb = await createTestDb();
     AppDatabase.setDatabaseForTesting(testDb);
   });
@@ -40,9 +40,12 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.runAsync(() async {
       await tester.pumpWidget(const TaskFlowApp());
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      // The splash page uses Future.delayed(2s) in initState which runs
+      // inside runAsync, so it uses the real clock. Wait 3 real seconds.
+      await Future<void>.delayed(const Duration(seconds: 3));
       await tester.pump();
     });
+    await settle(tester);
     await tester.tap(find.text('Routines').first);
     await tester.pump();
   }

@@ -8,11 +8,12 @@ import '../models/focus_session.dart';
 import '../models/routine.dart';
 import '../models/task.dart';
 import 'focus_service.dart';
+import 'ui_sound_service.dart';
 
 /// Notification center: persisted toggles, Windows toasts (best-effort),
 /// a per-session break reminder (fires once per session, no leaks),
 /// per-day routine reminders (once per routine per day), due-date alerts,
-/// and pending-task summary alerts.
+/// pending-task summary alerts, and task-completion confirmations.
 class NotificationService {
   NotificationService({bool toasts = true}) : _toasts = toasts;
 
@@ -22,6 +23,7 @@ class NotificationService {
   static const prefRoutinesEnabled = 'notifications_routines_enabled';
   static const prefDueDateEnabled = 'notifications_duedate_enabled';
   static const prefPendingTasksEnabled = 'notifications_pending_enabled';
+  static const prefCompletionEnabled = 'notifications_completion_enabled';
   static const prefPendingStartHour = 'notifications_pending_start_hour';
   static const prefPendingStartMinute = 'notifications_pending_start_minute';
   static const prefPendingIntervalHours = 'notifications_pending_interval_hours';
@@ -74,16 +76,25 @@ class NotificationService {
       _dueDateEnabledCache = prefs.getBool(prefDueDateEnabled) ?? true;
     }
     return _dueDateEnabledCache!;
-  }
-
-  /// Whether pending-tasks notification popups are enabled. Cached after first read.
+  }  /// Whether pending-tasks notification popups are enabled. Cached after first read.
   bool? _pendingTasksEnabledCache;
   Future<bool> get pendingTasksEnabled async {
     if (_pendingTasksEnabledCache == null) {
       final prefs = await SharedPreferences.getInstance();
-      _pendingTasksEnabledCache = prefs.getBool(prefPendingTasksEnabled) ?? true;
+      _pendingTasksEnabledCache =
+          prefs.getBool(prefPendingTasksEnabled) ?? true;
     }
     return _pendingTasksEnabledCache!;
+  }
+
+  /// Whether task-completion confirmations are enabled. Cached after first read.
+  bool? _completionEnabledCache;
+  Future<bool> get completionEnabled async {
+    if (_completionEnabledCache == null) {
+      final prefs = await SharedPreferences.getInstance();
+      _completionEnabledCache = prefs.getBool(prefCompletionEnabled) ?? true;
+    }
+    return _completionEnabledCache!;
   }
 
   // ─── Pending-task schedule preferences ───
@@ -145,6 +156,12 @@ class NotificationService {
     _pendingTasksEnabledCache = value;
   }
 
+  Future<void> setCompletionEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(prefCompletionEnabled, value);
+    _completionEnabledCache = value;
+  }
+
   // ─── Due-date schedule preferences ───
 
   Future<int> get dueDateStartHour async {
@@ -200,20 +217,22 @@ class NotificationService {
     final n = now ?? DateTime.now();
     final startH = await dueDateStartHour;
     final startM = await dueDateStartMinute;
-    final interval = await dueDateIntervalHours;
+    final rawInterval = await dueDateIntervalHours;
+    // intervalHours 0 means 30 minutes (the UI stores 30m as 0)
+    final intervalMinutes = rawInterval == 0 ? 30 : rawInterval * 60;
     final count = await dueDateRepeatCount;
 
     final dayKey = _dayKey(n);
 
     for (var i = 0; i < count; i++) {
-      final slotMinutes = startH * 60 + startM + i * interval * 60;
+      final slotMinutes = startH * 60 + startM + i * intervalMinutes;
       final slotHour = slotMinutes ~/ 60;
       final slotMin = slotMinutes % 60;
 
       final slotTime = DateTime(n.year, n.month, n.day, slotHour, slotMin);
 
       final diff = n.difference(slotTime);
-      if (diff.inSeconds >= 0 && diff.inSeconds < 60) {
+      if (diff.inSeconds >= 0 && diff.inSeconds < 120) {
         final slotKey = '${dayKey}_$i';
         if (!_dueDateSlotsFired.contains(slotKey)) {
           _dueDateSlotsFired.add(slotKey);
@@ -239,20 +258,22 @@ class NotificationService {
     final startH = await pendingStartHour;
     final startM = await pendingStartMinute;
     final interval = await pendingIntervalHours;
+    // intervalHours 0 means 30 minutes (the UI stores 30m as 0)
+    final intervalMinutes = interval == 0 ? 30 : interval * 60;
     final count = await pendingRepeatCount;
 
     final dayKey = _dayKey(n);
 
     for (var i = 0; i < count; i++) {
-      final slotMinutes = startH * 60 + startM + i * interval * 60;
+      final slotMinutes = startH * 60 + startM + i * intervalMinutes;
       final slotHour = slotMinutes ~/ 60;
       final slotMin = slotMinutes % 60;
 
       final slotTime = DateTime(n.year, n.month, n.day, slotHour, slotMin);
 
-      // Fire within a 60-second window after the scheduled minute.
+      // Fire within a 120-second window after the scheduled minute.
       final diff = n.difference(slotTime);
-      if (diff.inSeconds >= 0 && diff.inSeconds < 60) {
+      if (diff.inSeconds >= 0 && diff.inSeconds < 120) {
         final slotKey = '${dayKey}_$i';
         if (!_pendingSlotsFired.contains(slotKey)) {
           _pendingSlotsFired.add(slotKey);
@@ -335,8 +356,9 @@ class NotificationService {
         _toast = WindowsNotification(applicationId: 'TaskFlow.App');
         _toastReady = true;
       }
+      final id = 'toast_${DateTime.now().microsecondsSinceEpoch}';
       await _toast!.showNotificationPluginTemplate(
-        NotificationMessage.fromPluginTemplate('', title, body),
+        NotificationMessage.fromPluginTemplate(id, title, body),
       );
     } catch (_) {
       // Toasts must never crash the app.
@@ -348,14 +370,24 @@ class NotificationService {
     final dueStr = task.dueDate != null
         ? '${task.dueDate!.day}/${task.dueDate!.month}/${task.dueDate!.year}'
         : 'now';
+    UiSoundService.instance.reminderFired();
     await showToast(
       title: '📋 Task Due: ${task.title}',
       body: 'This task was due on $dueStr. Tap to open TaskFlow.',
     );
   }
 
+  /// Sends a completion confirmation toast for [task].
+  Future<void> showTaskCompletedToast(Task task) async {
+    await showToast(
+      title: '✅ Task Completed: ${task.title}',
+      body: 'Nice work! ${task.title} is marked as done.',
+    );
+  }
+
   /// Sends a pending-tasks summary toast.
   Future<void> showPendingTasksToast(int count) async {
+    UiSoundService.instance.reminderFired();
     await showToast(
       title: '📌 Pending Tasks: $count',
       body: '$count task${count == 1 ? '' : 's'} still pending. Open TaskFlow to review.',

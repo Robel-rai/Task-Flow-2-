@@ -75,7 +75,7 @@ class _AppShellState extends State<AppShell> {
     // Check immediately after first frame, then every 60 seconds.
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkNotifications());
     _notificationTimer = Timer.periodic(
-      const Duration(seconds: 60),
+      const Duration(seconds: 30),
       (_) => _checkNotifications(),
     );
   }
@@ -125,8 +125,8 @@ class _AppShellState extends State<AppShell> {
       }
       // Reset fired slots at midnight
       _notificationService.resetSlotsIfNeeded(DateTime.now());
-    } catch (_) {
-      // Notification checks must never crash the app.
+    } catch (e, st) {
+      debugPrint('Notification check error: $e $st');
     }
   }
 

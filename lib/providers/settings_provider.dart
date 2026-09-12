@@ -7,6 +7,7 @@ import '../database/app_database.dart';
 import '../models/category.dart';
 import '../models/nav_page.dart';
 import '../repositories/category_repository.dart';
+import '../services/ui_sound_service.dart';
 import '../theme/app_theme.dart';
 
 /// Owns app-level configuration: categories, sidebar navigation order,
@@ -40,6 +41,28 @@ class SettingsProvider extends AppChangeNotifier {
 
   bool _autoStartTaskTimer = true;
   bool get autoStartTaskTimer => _autoStartTaskTimer;
+
+  // ─── UI sound preferences ───
+  bool _uiSoundEnabled = true;
+  bool get uiSoundEnabled => _uiSoundEnabled;
+
+  double _uiSoundVolume = 0.7;
+  double get uiSoundVolume => _uiSoundVolume;
+
+  UiSoundPack _uiSoundPack = UiSoundPack.minimal;
+  UiSoundPack get uiSoundPack => _uiSoundPack;
+
+  bool _uiSoundFocusEnabled = true;
+  bool get uiSoundFocusEnabled => _uiSoundFocusEnabled;
+
+  bool _uiSoundTasksEnabled = true;
+  bool get uiSoundTasksEnabled => _uiSoundTasksEnabled;
+
+  bool _uiSoundNotificationsEnabled = true;
+  bool get uiSoundNotificationsEnabled => _uiSoundNotificationsEnabled;
+
+  bool _uiSoundLoopEnabled = false;
+  bool get uiSoundLoopEnabled => _uiSoundLoopEnabled;
 
   // ─── Custom colors for dark mode ───
   Color? _darkBackground;
@@ -116,6 +139,26 @@ class SettingsProvider extends AppChangeNotifier {
     _pomodoroBreakMinutes = prefs.getInt('pomodoroBreakMinutes') ?? 5;
     _pomodoroLongBreakMinutes = prefs.getInt('pomodoroLongBreakMinutes') ?? 15;
     _autoStartTaskTimer = prefs.getBool('autoStartTaskTimer') ?? true;
+
+    // ─── UI sound preferences (mirrored into UiSoundService) ───
+    _uiSoundEnabled = prefs.getBool('uiSoundEnabled') ?? true;
+    _uiSoundVolume = (prefs.getDouble('uiSoundVolume') ?? 0.7).clamp(0.0, 1.0);
+    _uiSoundPack = UiSoundPack.fromId(prefs.getString('uiSoundPack'));
+    _uiSoundFocusEnabled = prefs.getBool('uiSoundFocusEnabled') ?? true;
+    _uiSoundTasksEnabled = prefs.getBool('uiSoundTasksEnabled') ?? true;
+    _uiSoundNotificationsEnabled =
+        prefs.getBool('uiSoundNotificationsEnabled') ?? true;
+    _uiSoundLoopEnabled = prefs.getBool('uiSoundLoopEnabled') ?? false;
+    await UiSoundService.instance.loadPreferences(
+      enabled: _uiSoundEnabled,
+      volume: _uiSoundVolume,
+      pack: _uiSoundPack,
+      focusEnabled: _uiSoundFocusEnabled,
+      tasksEnabled: _uiSoundTasksEnabled,
+      notificationsEnabled: _uiSoundNotificationsEnabled,
+      loopEnabled: _uiSoundLoopEnabled,
+    );
+
     await _loadCustomColors();
     safeNotify(); // Single notification after all data is loaded
     EventBus.instance.subscribe(AppEvent.categoriesChanged, refreshCategories);
@@ -158,6 +201,56 @@ class SettingsProvider extends AppChangeNotifier {
     safeNotify();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('autoStartTaskTimer', enabled);
+  }
+
+  // ─── UI sound persistence (single source: UiSoundService state) ───
+
+  Future<void> setUiSoundEnabled(bool value) async {
+    _uiSoundEnabled = value;
+    UiSoundService.instance.setEnabled(value);
+    if (!value) UiSoundService.instance.stopAll();
+    safeNotify();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('uiSoundEnabled', value);
+  }
+
+  Future<void> setUiSoundVolume(double value) async {
+    _uiSoundVolume = value.clamp(0.0, 1.0);
+    UiSoundService.instance.setVolume(_uiSoundVolume);
+    safeNotify();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('uiSoundVolume', _uiSoundVolume);
+  }
+
+  Future<void> setUiSoundPack(UiSoundPack value) async {
+    _uiSoundPack = value;
+    UiSoundService.instance.setPack(value);
+    safeNotify();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('uiSoundPack', value.id);
+  }
+
+  Future<void> setUiSoundCategoryEnabled(UiSoundCategory c, bool v) async {
+    switch (c) {
+      case UiSoundCategory.focus:
+        _uiSoundFocusEnabled = v;
+      case UiSoundCategory.tasks:
+        _uiSoundTasksEnabled = v;
+      case UiSoundCategory.notifications:
+        _uiSoundNotificationsEnabled = v;
+    }
+    UiSoundService.instance.setCategoryEnabled(c, v);
+    safeNotify();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('uiSound${c.name[0].toUpperCase()}${c.name.substring(1)}Enabled', v);
+  }
+
+  Future<void> setUiSoundLoopEnabled(bool value) async {
+    _uiSoundLoopEnabled = value;
+    UiSoundService.instance.setLoopEnabled(value);
+    safeNotify();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('uiSoundLoopEnabled', value);
   }
 
   // ─── Custom colors persistence ───

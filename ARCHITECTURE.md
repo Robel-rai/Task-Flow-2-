@@ -12,7 +12,7 @@ TaskFlow v2 is a full rewrite of the v1 Windows desktop task-management app. It 
 
 | Area | v1 problem | v2 design |
 |---|---|---|
-| Data location | DB written next to the EXE (breaks under MSIX / Program Files) | DB in `getApplicationSupportDirectory()` |
+| Data location | DB written next to the EXE (breaks under MSIX / Program Files) | Release: `DB\` next to the exe (with AppData fallback + one-time migration); debug: separate `taskflow_dev.db` in AppData |
 | State | One 600-line `AppState`; 1s global `notifyListeners()` rebuilds the whole tree | Focused providers; per-task local tickers |
 | Data model | Categories are free-text strings; subtasks stored as JSON blob; no ordering persistence | Normalized `categories` + `subtasks` tables; `sort_order` persisted |
 | Queries | N+1 everywhere (7 queries per weekly chart; project status loads all rows) | Batched analytics SQL + indexes |
@@ -53,7 +53,8 @@ TaskFlow v2 is a full rewrite of the v1 Windows desktop task-management app. It 
 │  database/      schema v2 · migration chain · seed data · indexes      │
 └─────────────────────────────────────────────────────────────────────────┘
                 SQLite via sqflite_ffi  →  taskflow.db
-                (getApplicationSupportDirectory() — fixed for MSIX)
+                (release: DB\ next to the exe, AppData fallback;
+                 debug: taskflow_dev.db in AppData)
 ```
 
 **Layer rules**
@@ -249,7 +250,7 @@ All services are pure Dart (no `BuildContext`, no widgets) → unit-testable.
 
 ## 7. Database Design
 
-**File:** `taskflow.db` in `getApplicationSupportDirectory()` — same path in debug and release. This fixes v1's fatal "write next to the executable" behavior under MSIX and Program Files installs.
+**File:** `taskflow.db` in a `DB` folder next to the running executable (release builds; portable-style data that ships with the app). If the install folder is not writable, the app falls back to `getApplicationSupportDirectory()`. An existing legacy database in the application-support location is auto-migrated into `DB` on first writable launch. **Debug builds** use `getApplicationSupportDirectory()` with a distinct `taskflow_dev.db` filename so dev/test builds can never touch production data.
 
 ### 7.1 Schema v2
 

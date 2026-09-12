@@ -8,6 +8,7 @@ import '../providers/settings_provider.dart';
 import '../providers/tasks_provider.dart';
 import '../services/focus_service.dart';
 import '../services/notification_service.dart';
+import '../services/ui_sound_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
@@ -104,6 +105,7 @@ class _FocusTimerState extends State<FocusTimer> {
     // Break reminder: fires once per session when the continuous-focus
     // threshold is crossed (2h), then never again for that session.
     if (await _notifications.shouldShowBreakReminder(session)) {
+      UiSoundService.instance.reminderFired();
       await _notifications.showToast(
         title: 'Time for a break',
         body: 'You\'ve been focusing for over '
@@ -123,7 +125,8 @@ class _FocusTimerState extends State<FocusTimer> {
 
     if (_targetMinutes != null &&
         session.currentDurationSeconds >= _targetMinutes! * 60) {
-      _provider.stop();
+      // Reaches target → completion cue (not the early-stop one).
+      _provider.complete();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
