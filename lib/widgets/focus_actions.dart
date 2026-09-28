@@ -5,7 +5,6 @@ import '../core/app_navigator.dart';
 import '../providers/focus_provider.dart';
 import '../providers/tasks_provider.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 
 /// FocusScreen position in `AppShell._screens`
 /// (0 Dashboard, 1 Tasks, 2 Calendar, 3 Projects, 4 Focus, ...).
@@ -54,7 +53,7 @@ Future<void> toggleFocusFromTask(
                 style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
+            style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Switch'),
           ),

@@ -1364,7 +1364,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                     children: [
                       ListTile(
                         leading: Icon(Icons.palette_outlined,
-                            color: AppTheme.primary),
+                            color: colors.primary),
                         title: const Text('Theme Mode',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -1401,7 +1401,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: Icon(Icons.tune, color: AppTheme.primary),
+                        leading: Icon(Icons.tune, color: colors.primary),
                         title: const Text('More Options',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -1430,12 +1430,12 @@ class _SettingsHomeState extends State<_SettingsHome> {
                     children: [
                       ListTile(
                         leading: Icon(Icons.label_outline,
-                            color: AppTheme.primary),
-                        title: const Text('Categories',
+                            color: colors.primary),
+                        title: const Text('Categories and Tags',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
                         subtitle: const Text(
-                            'Create, rename, recolor, and delete task categories'),
+                            'Manage the categories and tags used to organize and filter your tasks'),
                         trailing:
                             Icon(Icons.chevron_right, color: colors.textTertiary),
                         onTap: widget.onOpenCategories,
@@ -1443,7 +1443,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                       const Divider(height: 1),
                       ListTile(
                         leading: Icon(Icons.timer_outlined,
-                            color: AppTheme.primary),
+                            color: colors.primary),
                         title: const Text('Focus Preferences',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -1456,7 +1456,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                       const Divider(height: 1),
                       ListTile(
                         leading: Icon(Icons.music_note_outlined,
-                            color: AppTheme.primary),
+                            color: colors.primary),
                         title: const Text('UI Sound & Customization',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -1480,7 +1480,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                   child: Column(
                     children: [
                       ListTile(
-                        leading: Icon(Icons.play_circle_outline, color: AppTheme.primary),
+                        leading: Icon(Icons.play_circle_outline, color: colors.primary),
                         title: const Text('Show Splash Screen', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                         subtitle: const Text('Replay the app introduction'),
                         trailing: Icon(Icons.chevron_right, color: colors.textTertiary),
@@ -1508,7 +1508,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                   margin: EdgeInsets.zero,
                   child: ListTile(
                     leading: Icon(Icons.help_outline,
-                        color: AppTheme.primary),
+                        color: colors.primary),
                     title: const Text('About',
                         style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600)),
@@ -1532,7 +1532,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                     children: [
                       ListTile(
                         leading: Icon(Icons.view_agenda_outlined,
-                            color: AppTheme.primary),
+                            color: colors.primary),
                         title: const Text('Sidebar order',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -1544,7 +1544,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: Icon(Icons.keyboard, color: AppTheme.primary),
+                        leading: Icon(Icons.keyboard, color: colors.primary),
                         title: const Text('Keyboard Shortcuts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                         subtitle: const Text('View and customize all keyboard shortcuts'),
                         trailing: Icon(Icons.chevron_right, color: colors.textTertiary),
@@ -1683,7 +1683,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                     children: [
                       ListTile(
                         leading: Icon(Icons.upload_file,
-                            color: AppTheme.primary),
+                            color: colors.primary),
                         title: const Text('Export tasks (CSV)',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -1694,7 +1694,7 @@ class _SettingsHomeState extends State<_SettingsHome> {
                       const Divider(height: 1),
                       ListTile(
                         leading: Icon(Icons.download,
-                            color: AppTheme.primary),
+                            color: colors.primary),
                         title: Text(
                             _importing ? 'Importing…' : 'Import tasks (CSV)',
                             style: const TextStyle(
@@ -1821,7 +1821,7 @@ class _ThemeModeRadio extends StatelessWidget {
 
     return Material(
       color: selected
-          ? AppTheme.primary.withValues(alpha: 0.08)
+          ? colors.primary.withValues(alpha: 0.08)
           : Colors.transparent,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
@@ -1832,7 +1832,7 @@ class _ThemeModeRadio extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: selected ? AppTheme.primary : colors.border,
+              color: selected ? colors.primary : colors.border,
               width: selected ? 2 : 1,
             ),
           ),
@@ -1840,7 +1840,7 @@ class _ThemeModeRadio extends StatelessWidget {
             children: [
               Icon(icon,
                   size: 20,
-                  color: selected ? AppTheme.primary : colors.textSecondary),
+                  color: selected ? colors.primary : colors.textSecondary),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -1849,7 +1849,7 @@ class _ThemeModeRadio extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                     color: selected
-                        ? AppTheme.primary
+                        ? colors.primary
                         : colors.textPrimary,
                   ),
                 ),
@@ -1857,7 +1857,7 @@ class _ThemeModeRadio extends StatelessWidget {
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
                 size: 20,
-                color: selected ? AppTheme.primary : colors.textTertiary,
+                color: selected ? colors.primary : colors.textTertiary,
               ),
             ],
           ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'dart:ffi';
+import 'dart:ffi' as ffi;
 import 'package:ffi/ffi.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:window_manager/window_manager.dart';
 import 'widgets/splash_page.dart';
 import 'database/app_database.dart';
 import 'database/v1_importer.dart';
@@ -20,18 +21,18 @@ import 'theme/app_theme.dart';
 
 
 // -- Single-instance enforcement via Win32 named mutex --
-final DynamicLibrary _kernel32 = DynamicLibrary.open('kernel32.dll');
+final ffi.DynamicLibrary _kernel32 = ffi.DynamicLibrary.open('kernel32.dll');
 
-typedef CreateMutexNative = Pointer<NativeType> Function(
-    Pointer<NativeType>, Bool, Pointer<Utf16>);
-typedef CreateMutexDart = Pointer<NativeType> Function(
-    Pointer<NativeType>, bool, Pointer<Utf16>);
+typedef CreateMutexNative = ffi.Pointer<ffi.NativeType> Function(
+    ffi.Pointer<ffi.NativeType>, ffi.Bool, ffi.Pointer<Utf16>);
+typedef CreateMutexDart = ffi.Pointer<ffi.NativeType> Function(
+    ffi.Pointer<ffi.NativeType>, bool, ffi.Pointer<Utf16>);
 
-typedef GetLastErrorNative = Int32 Function();
+typedef GetLastErrorNative = ffi.Int32 Function();
 typedef GetLastErrorDart = int Function();
 
-typedef CloseHandleNative = Bool Function(Pointer<NativeType>);
-typedef CloseHandleDart = bool Function(Pointer<NativeType>);
+typedef CloseHandleNative = ffi.Bool Function(ffi.Pointer<ffi.NativeType>);
+typedef CloseHandleDart = bool Function(ffi.Pointer<ffi.NativeType>);
 
 final CreateMutexDart _createMutex =
     _kernel32.lookupFunction<CreateMutexNative, CreateMutexDart>('CreateMutexW');
@@ -44,10 +45,10 @@ const int _errorAlreadyExists = 183;
 
 bool _isAlreadyRunning() {
   final name = 'TaskFlow_SingleInstance'.toNativeUtf16();
-  final mutex = _createMutex(nullptr, false, name);
+  final mutex = _createMutex(ffi.nullptr, false, name);
   final error = _getLastError();
   calloc.free(name);
-  if (mutex != nullptr) _closeHandle(mutex);
+  if (mutex != ffi.nullptr) _closeHandle(mutex);
   return error == _errorAlreadyExists;
 }
 
@@ -69,6 +70,20 @@ void main() async {
 
   // Remove known ghost/test data that may have been imported from v1.
   await AppDatabase.cleanupGhostData();
+
+  // Custom in-app title bar: hide the native one before the window is shown
+  // (drag-to-move, snap, double-click maximize are handled by the app).
+  await windowManager.ensureInitialized();
+  await windowManager.waitUntilReadyToShow(
+    const WindowOptions(
+      titleBarStyle: TitleBarStyle.hidden,
+    ),
+    () async {
+      await windowManager.setMinimumSize(const Size(960, 600));
+      await windowManager.show();
+      await windowManager.focus();
+    },
+  );
 
   runApp(const TaskFlowApp());
 }

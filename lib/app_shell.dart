@@ -23,6 +23,7 @@ import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/sidebar.dart';
 import 'providers/shortcuts_provider.dart';
+import 'widgets/app_title_bar.dart';
 import 'widgets/task_dialog.dart';
 import 'widgets/global_search.dart';
 import 'components/projects/project_dialog.dart';
@@ -167,12 +168,19 @@ class _AppShellState extends State<AppShell> {
                       onNavigate: _onNavigate,
                       onCloseDrawer: _closeDrawer))
               : null,
-          body: Row(
+          body: Column(
             children: [
-              if (!isCollapsed)
-                Sidebar(currentIndex: currentIndex, onNavigate: _onNavigate),
+              const AppTitleBar(),
               Expanded(
-                child: IndexedStack(index: currentIndex, children: _screens),
+                child: Row(
+                  children: [
+                    if (!isCollapsed)
+                      Sidebar(currentIndex: currentIndex, onNavigate: _onNavigate),
+                    Expanded(
+                      child: IndexedStack(index: currentIndex, children: _screens),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

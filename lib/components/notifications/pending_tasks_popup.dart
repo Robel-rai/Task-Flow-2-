@@ -126,7 +126,7 @@ class PendingTasksPopup extends StatelessWidget {
                       : null;
                   final categoryColor = category != null
                       ? AppTheme.getRoutineColor(category.color)
-                      : AppTheme.primary;
+                      : colors.primary;
 
                   return Container(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),

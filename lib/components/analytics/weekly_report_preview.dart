@@ -105,7 +105,7 @@ class WeeklyReportPreview extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppTheme.primary),
+        Icon(icon, size: 16, color: colors.primary),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

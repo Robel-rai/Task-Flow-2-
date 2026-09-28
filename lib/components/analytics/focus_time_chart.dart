@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../theme/app_colors.dart';
-import '../../theme/app_theme.dart';
 
 /// Bar chart of focus minutes per day over the last 7 (week) or 30
 /// (month) days. [minutesPerDay] is keyed `yyyy-MM-dd`.
@@ -46,7 +45,7 @@ class _FocusTimeChartState extends State<FocusTimeChart> {
           barRods: [
             BarChartRodData(
               toY: values[i].$2.toDouble(),
-              color: AppTheme.primary,
+              color: colors.primary,
               width: _monthView ? 6 : 16,
               borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(3)),
@@ -105,9 +104,13 @@ class _FocusTimeChartState extends State<FocusTimeChart> {
                   minY: 0,
                   maxY: maxY,
                   barGroups: groups,
-                  gridData: const FlGridData(
+                  gridData: FlGridData(
                     drawVerticalLine: false,
                     horizontalInterval: 30,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: colors.border.withValues(alpha: 0.6),
+                      strokeWidth: 1,
+                    ),
                   ),
                   borderData: FlBorderData(show: false),
                   titlesData: FlTitlesData(

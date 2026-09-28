@@ -68,6 +68,9 @@ flutter_*.log
 *.exp
 *.lib
 *.ilk
+
+# Exception: VC++ runtime DLLs bundled into the installer (TaskFlow_Setup.iss)
+!redist/*.dll
 *.iobj
 *.ipdb
 *.pch
@@ -87,3 +90,7 @@ flutter_*.log
 sample_tasks.csv
 taskflow_analytics.csv
 taskflow_tasks_*.csv
+
+# Folders
+
+Google_Staff/

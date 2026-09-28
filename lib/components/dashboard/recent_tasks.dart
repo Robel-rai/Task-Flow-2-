@@ -118,7 +118,7 @@ class _TaskRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          _chip(colors, AppTheme.primary, categoryName),
+          _chip(colors, colors.primary, categoryName),
           const SizedBox(width: 6),
           _chip(colors, priorityColor, task.priority),
           if (task.timeSpentSeconds > 0) ...[

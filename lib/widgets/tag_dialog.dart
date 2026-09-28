@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../models/tag.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 
 /// Create / edit dialog for a tag.  Returns the saved [Tag] on confirm.
+///
+/// Tags are color-free: a tag is just a name.
 class TagDialog extends StatefulWidget {
   const TagDialog({super.key, this.tag});
 
@@ -17,13 +18,11 @@ class TagDialog extends StatefulWidget {
 
 class _TagDialogState extends State<TagDialog> {
   late final TextEditingController _nameController;
-  late String _color;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.tag?.name ?? '');
-    _color = widget.tag?.color ?? 'primary';
   }
 
   @override
@@ -41,7 +40,7 @@ class _TagDialogState extends State<TagDialog> {
       return;
     }
     Navigator.of(context).pop(
-      Tag(id: widget.tag?.id, name: name, color: _color),
+      Tag(id: widget.tag?.id, name: name),
     );
   }
 
@@ -74,36 +73,6 @@ class _TagDialogState extends State<TagDialog> {
                 decoration: const InputDecoration(hintText: 'Tag name'),
                 onSubmitted: (_) => _save(),
               ),
-              const SizedBox(height: 16),
-              Text('Color', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final entry in _tagColors.entries)
-                    GestureDetector(
-                      onTap: () => setState(() => _color = entry.key),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: entry.value,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _color == entry.key
-                                ? colors.textPrimary
-                                : Colors.transparent,
-                            width: 2.5,
-                          ),
-                        ),
-                        child: _color == entry.key
-                            ? Icon(Icons.check, size: 16, color: Colors.white)
-                            : null,
-                      ),
-                    ),
-                ],
-              ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -127,6 +96,3 @@ class _TagDialogState extends State<TagDialog> {
     );
   }
 }
-
-/// Named color presets for tags, matching the app's palette.
-Map<String, Color> get _tagColors => AppTheme.routineColors;

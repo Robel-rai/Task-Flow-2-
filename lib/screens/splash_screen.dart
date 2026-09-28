@@ -106,7 +106,7 @@ class _SplashScreenState extends State<SplashScreen> {
                           height: 8,
                           decoration: BoxDecoration(
                             color: i == _page
-                                ? AppTheme.primary
+                                ? colors.primary
                                 : colors.textTertiary.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -118,7 +118,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   FilledButton(
                     onPressed: _next,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
+                      backgroundColor: colors.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 28, vertical: 14),
@@ -161,10 +161,10 @@ class _SplashPage extends StatelessWidget {
             width: 140,
             height: 140,
             decoration: BoxDecoration(
-              color: data.color.withValues(alpha: 0.10),
+              color: (data.color ?? colors.primary).withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
-            child: Icon(data.icon, size: 64, color: data.color),
+            child: Icon(data.icon, size: 64, color: data.color ?? colors.primary),
           ),
           const SizedBox(height: 40),
           Text(
@@ -196,20 +196,21 @@ class _SplashPage extends StatelessWidget {
 class _SplashPageData {
   const _SplashPageData({
     required this.icon,
-    required this.color,
+    this.color,
     required this.title,
     required this.subtitle,
   });
 
   final IconData icon;
-  final Color color;
+
+  /// Fixed accent for this page, or null to use the theme's primary.
+  final Color? color;
   final String title;
   final String subtitle;
 
   static const list = [
     _SplashPageData(
       icon: Icons.check_circle_outline,
-      color: AppTheme.primary,
       title: 'Welcome to TaskFlow',
       subtitle:
           'The modern task manager built for focus.\nOrganize your work, track your habits,\nand see your productivity soar.',

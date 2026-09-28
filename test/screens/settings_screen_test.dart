@@ -35,11 +35,11 @@ void main() {
     }
   }
 
-  /// Navigates to Settings and opens the Categories sub-setting.
+  /// Navigates to Settings and opens the Categories and Tags sub-setting.
   Future<void> openCategories(WidgetTester tester) async {
     await tester.tap(find.text('Settings').first);
     await tester.pump();
-    await tester.tap(find.text('Categories'));
+    await tester.tap(find.text('Categories and Tags'));
     await tester.pump();
   }
 
@@ -69,7 +69,9 @@ void main() {
     await bootApp(tester);
     await settle(tester);
 
-    // We're on the Categories page now: header + seeded rows.
+    // We're on the Categories and Tags page now: header + seeded rows.
+    expect(find.text('Categories and Tags'), findsOneWidget);
+    // The page shows the Categories section title.
     expect(find.text('Categories'), findsOneWidget);
     for (final name in ['General', 'Work', 'Study', 'Health', 'Personal',
         'Development', 'Design']) {
@@ -80,7 +82,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pump();
     expect(find.text('App preferences'), findsOneWidget);
-    expect(find.widgetWithText(ListTile, 'Categories'), findsOneWidget);
+    expect(
+        find.widgetWithText(ListTile, 'Categories and Tags'), findsOneWidget);
   });
 
   testWidgets('add a new category and see it in the list', (tester) async {
@@ -246,20 +249,23 @@ void main() {
     await bootApp(tester);
     await settle(tester);
 
-    // Go to Tasks and filter by Study.
+    // Go to Tasks and filter by Study via the new unified filter panel.
     await tester.tap(find.text('Tasks').first);
     await tester.pump();
+    await settle(tester);
 
-    await tester.tap(find.byType(DropdownButtonFormField<int?>));
+    await tester.tap(find.text('Filters'));
     await settle(tester);
     await tester.tap(find.text('Study').last);
     await settle(tester);
 
-    // The closed field now shows the selected category.
-    expect(
-        find.descendant(of: find.byType(DropdownButtonFormField<int?>),
-            matching: find.text('Study')),
-        findsOneWidget);
+    // The active filter shows as a removable summary chip.
+    expect(find.text('Category: Study'), findsOneWidget);
+
+    // Close the filter panel by tapping outside it (its barrier would
+    // otherwise swallow nav taps).
+    await tester.tapAt(const Offset(700, 500));
+    await settle(tester);
 
     // Delete Study from the Categories sub-setting (still open — the
     // settings screen keeps its sub-page state in the IndexedStack).
@@ -270,14 +276,13 @@ void main() {
     await tester.tap(find.text('Delete'));
     await settle(tester);
 
-    // Back to Tasks: no crash and the filter resets to All.
+    // Back to Tasks: no crash and the filter was cleared (no summary
+    // chip remains).
     await tester.tap(find.text('Tasks').first);
     await tester.pump();
     await settle(tester);
 
-    expect(
-        find.descendant(of: find.byType(DropdownButtonFormField<int?>),
-            matching: find.text('All')),
-        findsOneWidget);
+    expect(find.text('Category: Study'), findsNothing);
+    expect(find.text('Study'), findsNothing);
   });
 }

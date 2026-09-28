@@ -3,8 +3,13 @@
 ;
 ; Prerequisites:
 ;   1. Run: flutter build windows
-;   2. Open this file in Inno Setup Compiler
-;   3. Click Build → Compile (or press Ctrl+F9)
+;   2. Ensure redist/ contains the VC++ runtime DLLs (vcruntime140.dll,
+;      vcruntime140_1.dll, msvcp140.dll, msvcp140_1.dll, msvcp140_2.dll).
+;      They are copied from C:\Windows\System32 on the build machine and
+;      installed next to the exe so target PCs need no runtime install.
+;      Refresh them if you upgrade the Flutter/VS toolchain.
+;   3. Open this file in Inno Setup Compiler
+;   4. Click Build → Compile (or press Ctrl+F9)
 ;
 ; Output: install_output/Installer_TaskFlow2.exe
 
@@ -57,6 +62,15 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 [Files]
 ; Main application files from the Flutter release build
 Source: "{#FlutterBuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; Visual C++ 2015-2022 runtime DLLs, installed next to the exe so the app
+; runs on machines without the VC++ redistributable (the DLLs ship with the
+; installer instead of requiring a system-wide runtime install).
+Source: "redist\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "redist\vcruntime140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "redist\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "redist\msvcp140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "redist\msvcp140_2.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu shortcut

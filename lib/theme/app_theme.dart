@@ -119,6 +119,7 @@ class AppTheme {
     return ThemeData(
       extensions: [
         AppThemeColors(
+          primary: pc,
           background: bg,
           surface: sf,
           surfaceVariant: sfv,
@@ -138,6 +139,13 @@ class AppTheme {
       primaryColor: pc,
       colorScheme: ColorScheme.dark(
         primary: pc,
+        // Chips, segmented buttons and toggles read from `secondary`;
+        // leaving it unset gives Flutter's default teal accent, so bind
+        // it to the theme primary to keep them on the active palette.
+        secondary: pc,
+        onSecondary: Colors.white,
+        secondaryContainer: pc.withValues(alpha: 0.25),
+        onSecondaryContainer: tp,
         surface: bg,
         onSurface: tp,
         onPrimary: Colors.white,
@@ -250,6 +258,7 @@ class AppTheme {
     return ThemeData(
       extensions: [
         AppThemeColors(
+          primary: pc,
           background: bg,
           surface: sf,
           surfaceVariant: sfv,
@@ -269,6 +278,12 @@ class AppTheme {
       primaryColor: pc,
       colorScheme: ColorScheme.light(
         primary: pc,
+        // Same as dark: keep selection controls on the active palette
+        // instead of Flutter's default teal accent.
+        secondary: pc,
+        onSecondary: Colors.white,
+        secondaryContainer: pc.withValues(alpha: 0.15),
+        onSecondaryContainer: tp,
         surface: bg,
         onSurface: tp,
         onPrimary: Colors.white,

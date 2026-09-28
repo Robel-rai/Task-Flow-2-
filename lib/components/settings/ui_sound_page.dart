@@ -94,7 +94,7 @@ class UiSoundPage extends StatelessWidget {
                     children: [
                       SwitchListTile(
                         secondary: Icon(Icons.volume_up_outlined,
-                            color: AppTheme.primary),
+                            color: colors.primary),
                         title: const Text('UI sounds',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -112,7 +112,7 @@ class UiSoundPage extends StatelessWidget {
                       ListTile(
                         enabled: settings.uiSoundEnabled,
                         leading: Icon(Icons.volume_down_outlined,
-                            color: AppTheme.primary),
+                            color: colors.primary),
                         title: const Text('Volume',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -140,7 +140,7 @@ class UiSoundPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.primary,
+                            color: colors.primary,
                           ),
                         ),
                       ),
@@ -284,7 +284,7 @@ class UiSoundPage extends StatelessWidget {
                         ListTile(
                           enabled: settings.uiSoundEnabled,
                           leading: Icon(Icons.play_circle_outline,
-                              color: AppTheme.primary),
+                              color: colors.primary),
                           title: Text(_previews[i].$3,
                               style: const TextStyle(
                                   fontSize: 14,
@@ -310,7 +310,7 @@ class UiSoundPage extends StatelessWidget {
                   margin: EdgeInsets.zero,
                   child: ListTile(
                     leading: Icon(Icons.music_note_outlined,
-                        color: AppTheme.primary),
+                        color: colors.primary),
                     title: const Text('About the sounds',
                         style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600)),
@@ -354,7 +354,7 @@ class _PackChip extends StatelessWidget {
       waitDuration: const Duration(milliseconds: 400),
       child: Material(
         color: selected
-            ? AppTheme.primary.withValues(alpha: 0.10)
+            ? colors.primary.withValues(alpha: 0.10)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
@@ -366,7 +366,7 @@ class _PackChip extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: selected ? AppTheme.primary : colors.border,
+                color: selected ? colors.primary : colors.border,
                 width: selected ? 2 : 1,
               ),
             ),
@@ -377,7 +377,7 @@ class _PackChip extends StatelessWidget {
                       ? Icons.radio_button_checked
                       : Icons.radio_button_unchecked,
                   size: 18,
-                  color: selected ? AppTheme.primary : colors.textTertiary,
+                  color: selected ? colors.primary : colors.textTertiary,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -390,7 +390,7 @@ class _PackChip extends StatelessWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: selected
-                              ? AppTheme.primary
+                              ? colors.primary
                               : colors.textPrimary,
                         ),
                       ),

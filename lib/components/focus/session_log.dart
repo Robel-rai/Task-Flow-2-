@@ -132,7 +132,7 @@ class SessionLog extends StatelessWidget {
                           value: entry.value / maxTaskSeconds,
                           minHeight: 5,
                           backgroundColor: colors.surfaceVariant,
-                          color: AppTheme.primary,
+                          color: colors.primary,
                         ),
                       ),
                     ),

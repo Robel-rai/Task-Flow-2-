@@ -102,19 +102,19 @@ class _ListTaskItemState extends State<ListTaskItem> {
     return Container(
       decoration: BoxDecoration(
         color: widget.isHighlighted
-            ? AppTheme.primary.withValues(alpha: 0.06)
+            ? colors.primary.withValues(alpha: 0.06)
             : colors.surface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: widget.selected || widget.isHighlighted
-              ? AppTheme.primary
+              ? colors.primary
               : colors.border,
           width: widget.selected || widget.isHighlighted ? 2 : 1,
         ),
         boxShadow: widget.isHighlighted
             ? [
                 BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.35),
+                  color: colors.primary.withValues(alpha: 0.35),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -133,7 +133,7 @@ class _ListTaskItemState extends State<ListTaskItem> {
                       : Icons.radio_button_unchecked,
                   size: 20,
                   color: widget.selected
-                      ? AppTheme.primary
+                      ? colors.primary
                       : colors.textTertiary,
                 )
               : InkWell(

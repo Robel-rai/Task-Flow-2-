@@ -4,17 +4,23 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/project.dart';
+import '../models/tag.dart';
 import '../models/task.dart';
 import '../repositories/project_repository.dart';
+import '../repositories/tag_repository.dart';
 import '../repositories/task_repository.dart';
 
-/// Debounced task/project search plus keyboard selection and persisted
+/// Debounced task/project/tag search plus keyboard selection and persisted
 /// recent queries. Shared by the dashboard dropdown and the global sidebar
 /// search panel so both behave identically.
 class SearchQueryController extends ChangeNotifier {
-  SearchQueryController({TaskRepository? tasks, ProjectRepository? projects})
-      : _tasks = tasks ?? TaskRepository(),
-        _projects = projects ?? ProjectRepository();
+  SearchQueryController({
+    TaskRepository? tasks,
+    ProjectRepository? projects,
+    TagRepository? tags,
+  })  : _tasks = tasks ?? TaskRepository(),
+        _projects = projects ?? ProjectRepository(),
+        _tags = tags ?? TagRepository();
 
   static const int resultLimit = 6;
   static const int maxRecents = 5;
@@ -22,6 +28,7 @@ class SearchQueryController extends ChangeNotifier {
 
   final TaskRepository _tasks;
   final ProjectRepository _projects;
+  final TagRepository _tags;
 
   Timer? _debounce;
 
@@ -37,22 +44,29 @@ class SearchQueryController extends ChangeNotifier {
   List<Project> _projectResults = [];
   List<Project> get projectResults => _projectResults;
 
+  List<Tag> _tagResults = [];
+  List<Tag> get tagResults => _tagResults;
+
   int _selectedIndex = -1;
   int get selectedIndex => _selectedIndex;
 
   List<String> _recentQueries = [];
   List<String> get recentQueries => _recentQueries;
 
-  /// Total number of result items (tasks, then projects).
-  int get resultCount => _taskResults.length + _projectResults.length;
+  /// Total number of result items (tasks, then projects, then tags).
+  int get resultCount => _taskResults.length + _projectResults.length + _tagResults.length;
 
-  /// The item at [selectedIndex] in the flattened task-then-project list.
+  /// The item at [selectedIndex] in the flattened task-then-project-then-tag
+  /// list.
   Object? get selectedItem {
     if (_selectedIndex < 0 || _selectedIndex >= resultCount) return null;
     if (_selectedIndex < _taskResults.length) {
       return _taskResults[_selectedIndex];
     }
-    return _projectResults[_selectedIndex - _taskResults.length];
+    if (_selectedIndex < _taskResults.length + _projectResults.length) {
+      return _projectResults[_selectedIndex - _taskResults.length];
+    }
+    return _tagResults[_selectedIndex - _taskResults.length - _projectResults.length];
   }
 
   /// Loads persisted recent searches. Call once when the widget mounts.
@@ -70,6 +84,7 @@ class SearchQueryController extends ChangeNotifier {
     if (q.isEmpty) {
       _taskResults = [];
       _projectResults = [];
+      _tagResults = [];
       _searching = false;
       notifyListeners();
       return;
@@ -82,9 +97,11 @@ class SearchQueryController extends ChangeNotifier {
   Future<void> _runSearch(String q) async {
     final tasks = await _tasks.search(q, limit: resultLimit);
     final projects = await _projects.search(q, limit: resultLimit);
+    final tags = await _tags.searchByName(q, limit: resultLimit);
     if (_query != q) return; // stale response
     _taskResults = tasks;
     _projectResults = projects;
+    _tagResults = tags;
     _searching = false;
     _selectedIndex = resultCount > 0 ? 0 : -1;
     notifyListeners();
@@ -120,6 +137,7 @@ class SearchQueryController extends ChangeNotifier {
     _searching = false;
     _taskResults = [];
     _projectResults = [];
+    _tagResults = [];
     _selectedIndex = -1;
     notifyListeners();
   }

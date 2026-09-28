@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
-import '../../theme/app_theme.dart';
 
 /// Full-page empty state shown when the user has no tasks / analytics data.
 class EmptyAnalytics extends StatelessWidget {
@@ -23,13 +22,13 @@ class EmptyAnalytics extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.1),
+                color: colors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.bar_chart_rounded,
                 size: 40,
-                color: AppTheme.primary.withValues(alpha: 0.6),
+                color: colors.primary.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 24),

@@ -94,7 +94,7 @@ class _DayColumn extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: hovering
-                  ? AppTheme.primary.withValues(alpha: 0.6)
+                  ? colors.primary.withValues(alpha: 0.6)
                   : colors.border,
             ),
           ),
@@ -105,7 +105,7 @@ class _DayColumn extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
                   color: isToday
-                      ? AppTheme.primary.withValues(alpha: 0.15)
+                      ? colors.primary.withValues(alpha: 0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -124,7 +124,7 @@ class _DayColumn extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: isToday
-                            ? AppTheme.primary
+                            ? colors.primary
                             : colors.textPrimary,
                       ),
                     ),

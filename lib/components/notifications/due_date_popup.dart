@@ -115,7 +115,7 @@ class DueDatePopup extends StatelessWidget {
                       : null;
                   final categoryColor = category != null
                       ? AppTheme.getRoutineColor(category.color)
-                      : AppTheme.primary;
+                      : colors.primary;
                   final priorityColor =
                       AppTheme.getPriorityColor(task.priority);
 

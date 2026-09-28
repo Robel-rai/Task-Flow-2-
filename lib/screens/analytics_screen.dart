@@ -50,6 +50,7 @@ class AnalyticsScreen extends StatelessWidget {
 
   Widget _buildContent(BuildContext context, AnalyticsProvider analytics) {
     final summary = analytics.summary!;
+    final colors = Theme.of(context).extension<AppThemeColors>()!;
 
     // ─── Motivational insight ───
     final insightBanner = MotivationalInsight(insight: summary.insight);
@@ -61,7 +62,7 @@ class AnalyticsScreen extends StatelessWidget {
           label: 'Productivity Score',
           targetValue: summary.productivityScore.toDouble(),
           icon: Icons.bolt,
-          color: AppTheme.primary,
+          color: colors.primary,
           formatter: (v) => '${v.round()}/100',
         ),
         StatCard(

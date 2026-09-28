@@ -14,6 +14,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'subtask_editor.dart';
 import 'tag_dialog.dart';
+import 'tag_pill.dart';
 
 /// Result of the task dialog: the saved task, subtasks, and tag ids.
 class TaskDialogResult {
@@ -306,10 +307,44 @@ class _TaskDialogState extends State<TaskDialog> {
     if (result == null || !mounted) return;
     final tagRepo = TagRepository();
     final id = await tagRepo.insert(result);
-    final newTag = Tag(id: id, name: result.name, color: result.color);
+    final saved = (await tagRepo.getById(id)) ?? result;
     setState(() {
-      _allTags = [..._allTags, newTag];
+      _allTags = [..._allTags, saved];
       _selectedTagIds.add(id);
+    });
+  }
+
+  /// Deletes a tag everywhere (its task links are cleaned up first), then
+  /// drops it from the dialog's lists so the chip disappears immediately.
+  Future<void> _deleteTag(Tag tag) async {
+    final colors = Theme.of(context).extension<AppThemeColors>()!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: const Text('Delete Tag'),
+        content: Text(
+            'Delete "${tag.name}"? It will be removed from every task that uses it.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.rose),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await TagRepository().deleteCompletely(tag.id!);
+    if (!mounted) return;
+    setState(() {
+      _allTags.removeWhere((t) => t.id == tag.id);
+      _selectedTagIds.remove(tag.id);
     });
   }
 
@@ -572,23 +607,19 @@ class _TaskDialogState extends State<TaskDialog> {
                         runSpacing: 8,
                         children: [
                           for (final tag in _allTags)
-                            FilterChip(
-                              label: Text(tag.name, style: const TextStyle(fontSize: 12)),
-                              avatar: Icon(Icons.circle,
-                                  size: 10,
-                                  color: AppTheme.getRoutineColor(tag.color)),
+                            TagPill(
+                              tag: tag,
                               selected: _selectedTagIds.contains(tag.id),
-                              onSelected: (selected) {
+                              onToggle: () {
                                 setState(() {
-                                  if (selected) {
-                                    _selectedTagIds.add(tag.id!);
-                                  } else {
+                                  if (_selectedTagIds.contains(tag.id)) {
                                     _selectedTagIds.remove(tag.id);
+                                  } else {
+                                    _selectedTagIds.add(tag.id!);
                                   }
                                 });
                               },
-                              selectedColor: AppTheme.getRoutineColor(tag.color).withValues(alpha: 0.15),
-                              checkmarkColor: AppTheme.getRoutineColor(tag.color),
+                              onDelete: () => _deleteTag(tag),
                             ),
                         ],
                       ),

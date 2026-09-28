@@ -2,7 +2,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
-import '../../theme/app_theme.dart';
 
 /// Radar chart showing each category's completion rate (0–100%). Takes
 /// the top 6 categories by task count; at least 3 are required to draw.
@@ -62,8 +61,8 @@ class CategoryRadar extends StatelessWidget {
                         for (final p in entries)
                           RadarEntry(value: (p.$3 / p.$2 * 100).clamp(0, 100)),
                       ],
-                      fillColor: AppTheme.primary.withValues(alpha: 0.25),
-                      borderColor: AppTheme.primary,
+                      fillColor: colors.primary.withValues(alpha: 0.25),
+                      borderColor: colors.primary,
                       borderWidth: 2,
                       entryRadius: 3,
                     ),

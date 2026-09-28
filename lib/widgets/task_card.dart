@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/event_bus.dart';
 import '../models/subtask.dart';
 import '../models/task.dart';
 import '../providers/focus_provider.dart';
@@ -50,12 +51,35 @@ class _TaskCardState extends State<TaskCard> {
   Timer? _ticker;
   bool _expanded = false;
   bool _loadingSubtasks = false;
+
+  /// Subtask list this card loaded, tagged with the EventBus generation
+  /// it was fetched in (see [_invalidateSubtasks]).
   List<Subtask>? _subtasks;
+  int _subtasksVersion = 0;
+  int _loadedSubtasksVersion = -1;
 
   @override
   void initState() {
     super.initState();
     _syncTicker();
+    // Subtasks can change from anywhere (dialog saves, project kanban,
+    // auto-complete rules). Drop the cached list so the next expansion
+    // refetches from the database instead of showing stale rows.
+    final bus = EventBus.instance;
+    bus.subscribe(AppEvent.taskUpdated, _invalidateSubtasks);
+    bus.subscribe(AppEvent.taskCreated, _invalidateSubtasks);
+    bus.subscribe(AppEvent.subtaskToggled, _invalidateSubtasks);
+    bus.subscribe(AppEvent.taskCompleted, _invalidateSubtasks);
+    bus.subscribe(AppEvent.taskReopened, _invalidateSubtasks);
+  }
+
+  /// EventBus callbacks run synchronously (possibly during dispose of
+  /// sibling widgets), so keep them trivial and defer state work.
+  void _invalidateSubtasks() {
+    _subtasksVersion++;
+    if (mounted && _expanded && _subtasks != null && !_loadingSubtasks) {
+      scheduleMicrotask(_loadSubtasks);
+    }
   }
 
   @override
@@ -64,6 +88,13 @@ class _TaskCardState extends State<TaskCard> {
     if (oldWidget.task.isTimerRunning != widget.task.isTimerRunning ||
         oldWidget.task.timerStartedAt != widget.task.timerStartedAt) {
       _syncTicker();
+    }
+    if (oldWidget.task.id != widget.task.id) {
+      // The element was reused for a different task: forget everything and
+      // invalidate any in-flight fetch for the previous task.
+      _subtasksVersion++;
+      _subtasks = null;
+      if (_expanded) _loadSubtasks();
     }
   }
 
@@ -81,6 +112,12 @@ class _TaskCardState extends State<TaskCard> {
   @override
   void dispose() {
     _ticker?.cancel();
+    final bus = EventBus.instance;
+    bus.unsubscribe(AppEvent.taskUpdated, _invalidateSubtasks);
+    bus.unsubscribe(AppEvent.taskCreated, _invalidateSubtasks);
+    bus.unsubscribe(AppEvent.subtaskToggled, _invalidateSubtasks);
+    bus.unsubscribe(AppEvent.taskCompleted, _invalidateSubtasks);
+    bus.unsubscribe(AppEvent.taskReopened, _invalidateSubtasks);
     super.dispose();
   }
 
@@ -106,25 +143,38 @@ class _TaskCardState extends State<TaskCard> {
 
   void _toggleExpanded() {
     setState(() => _expanded = !_expanded);
-    if (_expanded && _subtasks == null && !_loadingSubtasks) {
+    if (_expanded &&
+        !_loadingSubtasks &&
+        (_subtasks == null || _loadedSubtasksVersion != _subtasksVersion)) {
       _loadSubtasks();
     }
   }
 
   Future<void> _loadSubtasks() async {
     final id = widget.task.id;
+    final version = _subtasksVersion;
     if (id == null) {
-      if (mounted) setState(() => _subtasks = const []);
+      if (mounted) {
+        setState(() {
+          _subtasks = const [];
+          _loadedSubtasksVersion = version;
+        });
+      }
       return;
     }
     setState(() => _loadingSubtasks = true);
     final list = await SubtaskRepository().getForTask(id);
-    if (mounted) {
-      setState(() {
-        _subtasks = list;
-        _loadingSubtasks = false;
-      });
+    if (!mounted) return;
+    if (version != _subtasksVersion) {
+      // Subtasks changed (or the card moved to another task) while this
+      // fetch was in flight — refetch so we never apply stale rows.
+      return _loadSubtasks();
     }
+    setState(() {
+      _subtasks = list;
+      _loadedSubtasksVersion = version;
+      _loadingSubtasks = false;
+    });
   }
 
   /// Toggles a subtask's completion. The service auto-completes the task
@@ -136,11 +186,15 @@ class _TaskCardState extends State<TaskCard> {
     await context.read<TasksProvider>().toggleSubtask(widget.task, id);
     if (!mounted) return;
     // Keep the dropdown's local state in sync with what we just saved.
-    setState(() {
-      _subtasks = _subtasks
-          ?.map((s) => s.id == id ? s.copyWith(isCompleted: !s.isCompleted) : s)
-          .toList();
-    });
+    // The subtaskToggled event bumps _subtasksVersion but does not refetch,
+    // so only apply this optimistic update when our data is current.
+    if (_loadedSubtasksVersion == _subtasksVersion) {
+      setState(() {
+        _subtasks = _subtasks
+            ?.map((s) => s.id == id ? s.copyWith(isCompleted: !s.isCompleted) : s)
+            .toList();
+      });
+    }
   }
 
   Future<void> _deleteTask() async {
@@ -192,19 +246,19 @@ class _TaskCardState extends State<TaskCard> {
     return Container(
       decoration: BoxDecoration(
         color: widget.isHighlighted
-            ? AppTheme.primary.withValues(alpha: 0.06)
+            ? colors.primary.withValues(alpha: 0.06)
             : colors.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: widget.selected || widget.isHighlighted
-              ? AppTheme.primary
+              ? colors.primary
               : colors.border,
           width: widget.selected || widget.isHighlighted ? 2 : 1,
         ),
         boxShadow: widget.isHighlighted
             ? [
                 BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.35),
+                  color: colors.primary.withValues(alpha: 0.35),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -293,7 +347,7 @@ class _TaskCardState extends State<TaskCard> {
                 : Icons.radio_button_unchecked,
             size: 20,
             color: widget.selected
-                ? AppTheme.primary
+                ? colors.primary
                 : colors.textTertiary,
           )
         else ...[

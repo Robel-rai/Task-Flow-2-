@@ -68,14 +68,14 @@ class AgendaView extends StatelessWidget {
             leading: Icon(
               isToday ? Icons.today : Icons.event,
               size: 18,
-              color: isToday ? AppTheme.primary : colors.textSecondary,
+              color: isToday ? colors.primary : colors.textSecondary,
             ),
             title: Text(
               DateFormat('EEEE, MMM d').format(date),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: isToday ? AppTheme.primary : colors.textPrimary,
+                color: isToday ? colors.primary : colors.textPrimary,
               ),
             ),
             subtitle: Text(

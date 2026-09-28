@@ -165,7 +165,7 @@ class _FocusTimerState extends State<FocusTimer> {
     }
     final ringColor = paused
         ? AppTheme.amber
-        : (active ? AppTheme.emerald : AppTheme.primary);
+        : (active ? AppTheme.emerald : colors.primary);
 
     return Container(
       padding: const EdgeInsets.all(24),

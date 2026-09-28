@@ -12,13 +12,14 @@ class KpiCardsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final analytics = context.watch<AnalyticsProvider>();
+    final colors = Theme.of(context).extension<AppThemeColors>()!;
 
     final cards = <_KpiCard>[
       _KpiCard(
         label: 'Total Tasks',
         targetValue: analytics.totalTasks.toDouble(),
         icon: Icons.task_alt,
-        color: AppTheme.primary,
+        color: colors.primary,
         formatter: (v) => '${v.round()}',
       ),
       _KpiCard(

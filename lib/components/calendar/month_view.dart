@@ -142,9 +142,9 @@ class _DayCell extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isSelected
-                    ? AppTheme.primary
+                    ? colors.primary
                     : (hovering
-                        ? AppTheme.primary.withValues(alpha: 0.6)
+                        ? colors.primary.withValues(alpha: 0.6)
                         : colors.border),
                 width: isSelected ? 1.5 : 1,
               ),
@@ -160,7 +160,7 @@ class _DayCell extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: isSelected
                           ? BoxDecoration(
-                              color: AppTheme.primary,
+                              color: colors.primary,
                               shape: BoxShape.circle,
                             )
                           : null,
@@ -173,7 +173,7 @@ class _DayCell extends StatelessWidget {
                           color: isSelected
                               ? Colors.white
                               : isToday
-                                  ? AppTheme.primary
+                                  ? colors.primary
                                   : (inMonth
                                       ? colors.textPrimary
                                       : colors.textTertiary),

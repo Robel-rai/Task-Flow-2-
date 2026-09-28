@@ -11,8 +11,8 @@ class CategoryBars extends StatelessWidget {
   /// (category name, total tasks, completed tasks), largest first.
   final List<(String, int, int)> performance;
 
-  static const _barColors = [
-    AppTheme.primary,
+  List<Color> _barColors(AppThemeColors colors) => [
+    colors.primary,
     AppTheme.blue,
     AppTheme.indigo,
     AppTheme.purple,
@@ -69,7 +69,7 @@ class CategoryBars extends StatelessWidget {
                   completed: entries[i].$3,
                   total: entries[i].$2,
                   fraction: maxTotal > 0 ? entries[i].$2 / maxTotal : 0,
-                  color: _barColors[i % _barColors.length],
+                  color: _barColors(colors)[i % 5],
                   colors: colors,
                 ),
               ),

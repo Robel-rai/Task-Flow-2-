@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 
 /// Shows a month-calendar dialog where the user picks a start and end day
 /// (inclusive range). Returns the chosen `(start, end)` or null on cancel.
@@ -246,7 +245,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
         height: 32,
         alignment: Alignment.center,
         decoration:
-            const BoxDecoration(color: AppTheme.primary, shape: BoxShape.circle),
+            BoxDecoration(color: colors.primary, shape: BoxShape.circle),
         child: Text(
           '${date.day}',
           style: const TextStyle(
@@ -262,7 +261,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
         height: 32,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppTheme.primary.withValues(alpha: 0.16),
+          color: colors.primary.withValues(alpha: 0.16),
           borderRadius: BorderRadius.horizontal(
             left: Radius.circular(firstInRange ? 16 : 0),
             right: Radius.circular(lastInRange ? 16 : 0),
@@ -278,7 +277,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
         '${date.day}',
         style: TextStyle(
           fontSize: 13,
-          color: isToday ? AppTheme.primary : colors.textPrimary,
+          color: isToday ? colors.primary : colors.textPrimary,
           fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
         ),
       );
@@ -302,7 +301,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
       ),
       child: Row(
         children: [
-          Icon(Icons.calendar_today, size: 15, color: AppTheme.primary),
+          Icon(Icons.calendar_today, size: 15, color: colors.primary),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
@@ -312,7 +311,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.primary,
+                color: colors.primary,
               ),
             ),
           ),
@@ -342,7 +341,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
           child: ElevatedButton(
             onPressed: _start == null ? null : _apply,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
+              backgroundColor: colors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),

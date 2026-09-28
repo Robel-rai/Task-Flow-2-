@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -130,6 +132,222 @@ class SettingsProvider extends AppChangeNotifier {
       _lightPrimary != null ||
       _lightTextPrimary != null;
 
+  // ─── Personal themes (user-saved snapshots, one per mode) ───
+  // role key (e.g. 'bg', 'primary') → serialized color.
+  Map<String, String> _personalDark = const {};
+  Map<String, String> _personalLight = const {};
+
+  bool get hasPersonalDarkTheme => _personalDark.isNotEmpty;
+  bool get hasPersonalLightTheme => _personalLight.isNotEmpty;
+
+  /// Saved personal-theme color for [role] in dark mode, or null.
+  Color? personalDarkColor(String role) => _decodeColor(_personalDark[role]);
+
+  /// Saved personal-theme color for [role] in light mode, or null.
+  Color? personalLightColor(String role) => _decodeColor(_personalLight[role]);
+
+  /// All color role keys managed by the custom-color system.
+  static const List<String> colorRoles = [
+    'bg', 'surface', 'surfaceVariant', 'border',
+    'textPrimary', 'textSecondary', 'textTertiary', 'primary',
+    'sidebarBg', 'navActive', 'navActiveText', 'navInactiveText',
+  ];
+
+  /// The color currently in effect for [role] in the given mode
+  /// (custom value if set, otherwise the built-in default).
+  Color currentRoleColor(String role, bool dark) =>
+      (dark ? _darkRole(role) : _lightRole(role)) ??
+      defaultForRole(role, dark);
+
+  /// Built-in default color for [role] in the given mode.
+  static Color defaultForRole(String role, bool dark) {
+    if (dark) {
+      return switch (role) {
+        'bg' => const Color(0xFF101022),
+        'surface' => const Color(0xFF0F172A),
+        'surfaceVariant' => const Color(0xFF1E293B),
+        'border' => const Color(0xFF1E293B),
+        'textPrimary' => const Color(0xFFF1F5F9),
+        'textSecondary' => const Color(0xFF94A3B8),
+        'textTertiary' => const Color(0xFF64748B),
+        'primary' => const Color(0xFF2e2ef4),
+        'sidebarBg' => const Color(0x80101022),
+        'navActive' => const Color(0xFF1f1fba),
+        'navActiveText' => Colors.white,
+        'navInactiveText' => const Color(0xFF94A3B8),
+        _ => const Color(0xFF999999),
+      };
+    }
+    return switch (role) {
+      'bg' => const Color(0xFFF8FAFC),
+      'surface' => const Color(0xFFFFFFFF),
+      'surfaceVariant' => const Color(0xFFF1F5F9),
+      'border' => const Color(0xFFE2E8F0),
+      'textPrimary' => const Color(0xFF1E293B),
+      'textSecondary' => const Color(0xFF64748B),
+      'textTertiary' => const Color(0xFF94A3B8),
+      'primary' => const Color(0xFF2e2ef4),
+      'sidebarBg' => Colors.white,
+      'navActive' => const Color(0xFF1f1fba),
+      'navActiveText' => Colors.white,
+      'navInactiveText' => const Color(0xFF64748B),
+      _ => const Color(0xFF999999),
+    };
+  }
+
+  Color? _darkRole(String role) => switch (role) {
+        'bg' => _darkBackground,
+        'surface' => _darkSurface,
+        'surfaceVariant' => _darkSurfaceVariant,
+        'border' => _darkBorder,
+        'textPrimary' => _darkTextPrimary,
+        'textSecondary' => _darkTextSecondary,
+        'textTertiary' => _darkTextTertiary,
+        'primary' => _darkPrimary,
+        'sidebarBg' => _darkSidebarBackground,
+        'navActive' => _darkNavActive,
+        'navActiveText' => _darkNavActiveText,
+        'navInactiveText' => _darkNavInactiveText,
+        _ => null,
+      };
+
+  Color? _lightRole(String role) => switch (role) {
+        'bg' => _lightBackground,
+        'surface' => _lightSurface,
+        'surfaceVariant' => _lightSurfaceVariant,
+        'border' => _lightBorder,
+        'textPrimary' => _lightTextPrimary,
+        'textSecondary' => _lightTextSecondary,
+        'textTertiary' => _lightTextTertiary,
+        'primary' => _lightPrimary,
+        'sidebarBg' => _lightSidebarBackground,
+        'navActive' => _lightNavActive,
+        'navActiveText' => _lightNavActiveText,
+        'navInactiveText' => _lightNavInactiveText,
+        _ => null,
+      };
+
+  void _setDarkRole(String role, Color? color) {
+    switch (role) {
+      case 'bg':
+        _darkBackground = color;
+      case 'surface':
+        _darkSurface = color;
+      case 'surfaceVariant':
+        _darkSurfaceVariant = color;
+      case 'border':
+        _darkBorder = color;
+      case 'textPrimary':
+        _darkTextPrimary = color;
+      case 'textSecondary':
+        _darkTextSecondary = color;
+      case 'textTertiary':
+        _darkTextTertiary = color;
+      case 'primary':
+        _darkPrimary = color;
+      case 'sidebarBg':
+        _darkSidebarBackground = color;
+      case 'navActive':
+        _darkNavActive = color;
+      case 'navActiveText':
+        _darkNavActiveText = color;
+      case 'navInactiveText':
+        _darkNavInactiveText = color;
+    }
+  }
+
+  void _setLightRole(String role, Color? color) {
+    switch (role) {
+      case 'bg':
+        _lightBackground = color;
+      case 'surface':
+        _lightSurface = color;
+      case 'surfaceVariant':
+        _lightSurfaceVariant = color;
+      case 'border':
+        _lightBorder = color;
+      case 'textPrimary':
+        _lightTextPrimary = color;
+      case 'textSecondary':
+        _lightTextSecondary = color;
+      case 'textTertiary':
+        _lightTextTertiary = color;
+      case 'primary':
+        _lightPrimary = color;
+      case 'sidebarBg':
+        _lightSidebarBackground = color;
+      case 'navActive':
+        _lightNavActive = color;
+      case 'navActiveText':
+        _lightNavActiveText = color;
+      case 'navInactiveText':
+        _lightNavInactiveText = color;
+    }
+  }
+
+  static String _encodeColor(Color c) {
+    final argb = c.toARGB32();
+    // Keep alpha when it isn't fully opaque (e.g. translucent sidebar).
+    if ((argb >> 24) == 0xFF) return AppTheme.colorToHex(c);
+    return '#${argb.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+  }
+
+  static Color? _decodeColor(String? hex) {
+    if (hex == null) return null;
+    return AppTheme.parseColor(hex);
+  }
+
+  /// Snapshots the colors currently in effect for [darkMode] (custom values
+  /// if set, otherwise the built-in defaults) into the personal theme.
+  Future<void> savePersonalTheme({required bool darkMode}) async {
+    final map = <String, String>{};
+    for (final role in colorRoles) {
+      final c = (darkMode ? _darkRole(role) : _lightRole(role)) ??
+          defaultForRole(role, darkMode);
+      map[role] = _encodeColor(c);
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        darkMode ? 'personalThemeDark' : 'personalThemeLight',
+        jsonEncode(map));
+    if (darkMode) {
+      _personalDark = map;
+    } else {
+      _personalLight = map;
+    }
+    safeNotify();
+  }
+
+  /// Applies the saved personal theme for [darkMode] to the active custom
+  /// colors (roles missing from the snapshot revert to defaults).
+  Future<void> applyPersonalTheme({required bool darkMode}) async {
+    final map = darkMode ? _personalDark : _personalLight;
+    if (map.isEmpty) return;
+    for (final role in colorRoles) {
+      final value = _decodeColor(map[role]);
+      if (darkMode) {
+        _setDarkRole(role, value);
+      } else {
+        _setLightRole(role, value);
+      }
+      await _saveColor('${darkMode ? 'dark' : 'light'}_$role', value);
+    }
+    safeNotify();
+  }
+
+  /// Removes the saved personal theme for [darkMode] (does not change the
+  /// currently applied colors).
+  Future<void> deletePersonalTheme({required bool darkMode}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(darkMode ? 'personalThemeDark' : 'personalThemeLight');
+    if (darkMode) {
+      _personalDark = const {};
+    } else {
+      _personalLight = const {};
+    }
+    safeNotify();
+  }
+
   Future<void> initialize() async {
     _categoryList = await _categories.getAll();
     await _loadNavOrder();
@@ -160,6 +378,7 @@ class SettingsProvider extends AppChangeNotifier {
     );
 
     await _loadCustomColors();
+    await _loadPersonalThemes();
     safeNotify(); // Single notification after all data is loaded
     EventBus.instance.subscribe(AppEvent.categoriesChanged, refreshCategories);
   }
@@ -295,6 +514,30 @@ class SettingsProvider extends AppChangeNotifier {
     return AppTheme.parseColor(hex);
   }
 
+  Future<void> _loadPersonalThemes() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final entry in [
+      MapEntry(true, 'personalThemeDark'),
+      MapEntry(false, 'personalThemeLight'),
+    ]) {
+      final raw = prefs.getString(entry.value);
+      if (raw == null) continue;
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          final map = decoded.map((k, v) => MapEntry(k.toString(), v.toString()));
+          if (entry.key) {
+            _personalDark = map;
+          } else {
+            _personalLight = map;
+          }
+        }
+      } catch (_) {
+        // Corrupt snapshot — ignore; the personal tile simply shows unsaved.
+      }
+    }
+  }
+
   Future<void> _saveColor(String key, Color? color) async {
     final prefs = await SharedPreferences.getInstance();
     if (color == null) {
@@ -307,68 +550,16 @@ class SettingsProvider extends AppChangeNotifier {
   // ─── Dark mode color setters ───
 
   Future<void> setDarkColor(String role, Color? color) async {
-    final key = 'dark_$role';
-    switch (role) {
-      case 'bg':
-        _darkBackground = color;
-      case 'surface':
-        _darkSurface = color;
-      case 'surfaceVariant':
-        _darkSurfaceVariant = color;
-      case 'border':
-        _darkBorder = color;
-      case 'textPrimary':
-        _darkTextPrimary = color;
-      case 'textSecondary':
-        _darkTextSecondary = color;
-      case 'textTertiary':
-        _darkTextTertiary = color;
-      case 'primary':
-        _darkPrimary = color;
-      case 'sidebarBg':
-        _darkSidebarBackground = color;
-      case 'navActive':
-        _darkNavActive = color;
-      case 'navActiveText':
-        _darkNavActiveText = color;
-      case 'navInactiveText':
-        _darkNavInactiveText = color;
-    }
-    await _saveColor(key, color);
+    _setDarkRole(role, color);
+    await _saveColor('dark_$role', color);
     safeNotify();
   }
 
   // ─── Light mode color setters ───
 
   Future<void> setLightColor(String role, Color? color) async {
-    final key = 'light_$role';
-    switch (role) {
-      case 'bg':
-        _lightBackground = color;
-      case 'surface':
-        _lightSurface = color;
-      case 'surfaceVariant':
-        _lightSurfaceVariant = color;
-      case 'border':
-        _lightBorder = color;
-      case 'textPrimary':
-        _lightTextPrimary = color;
-      case 'textSecondary':
-        _lightTextSecondary = color;
-      case 'textTertiary':
-        _lightTextTertiary = color;
-      case 'primary':
-        _lightPrimary = color;
-      case 'sidebarBg':
-        _lightSidebarBackground = color;
-      case 'navActive':
-        _lightNavActive = color;
-      case 'navActiveText':
-        _lightNavActiveText = color;
-      case 'navInactiveText':
-        _lightNavInactiveText = color;
-    }
-    await _saveColor(key, color);
+    _setLightRole(role, color);
+    await _saveColor('light_$role', color);
     safeNotify();
   }
 
@@ -760,6 +951,38 @@ class ColorPreset {
         navItemActive: Color(0xFFF57F17),
         navItemActiveText: Colors.white,
         navItemInactiveText: Color(0xFFF57F17),
+      ),
+    ),
+    ColorPreset(
+      name: 'KelamBis',
+      icon: Icons.contrast,
+      darkColors: PresetColors(
+        background: Color(0xFF0A0A0A),
+        surface: Color(0xFF141414),
+        surfaceVariant: Color(0xFF1F1F1F),
+        border: Color(0xFF2E2E2E),
+        textPrimary: Color(0xFFF5F5F5),
+        textSecondary: Color(0xFFA3A3A3),
+        textTertiary: Color(0xFF6B6B6B),
+        primary: Color(0xFF3F3F3F),
+        sidebarBackground: Color(0x800A0A0A),
+        navItemActive: Color(0xFF3F3F3F),
+        navItemActiveText: Colors.white,
+        navItemInactiveText: Color(0xFFA3A3A3),
+      ),
+      lightColors: PresetColors(
+        background: Color(0xFFFAFAFA),
+        surface: Color(0xFFFFFFFF),
+        surfaceVariant: Color(0xFFE5E5E5),
+        border: Color(0xFFD4D4D4),
+        textPrimary: Color(0xFF0A0A0A),
+        textSecondary: Color(0xFF525252),
+        textTertiary: Color(0xFF8A8A8A),
+        primary: Color(0xFF171717),
+        sidebarBackground: Color(0xFFFFFFFF),
+        navItemActive: Color(0xFF171717),
+        navItemActiveText: Colors.white,
+        navItemInactiveText: Color(0xFF525252),
       ),
     ),
   ];

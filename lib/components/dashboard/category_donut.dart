@@ -11,8 +11,8 @@ class CategoryDonut extends StatelessWidget {
   final Map<String, int> data;
   final int total;
 
-  static const List<Color> _palette = [
-    AppTheme.primary,
+  static List<Color> _palette(AppThemeColors colors) => [
+    colors.primary,
     AppTheme.blue,
     AppTheme.emerald,
     AppTheme.amber,
@@ -32,7 +32,7 @@ class CategoryDonut extends StatelessWidget {
       for (var i = 0; i < entries.length; i++)
         PieChartSectionData(
           value: entries[i].value.toDouble(),
-          color: _palette[i % _palette.length],
+          color: _palette(colors)[i % 9],
           radius: 54,
           showTitle: entries.length <= 7 && total > 0,
           title: total > 0
@@ -88,7 +88,7 @@ class CategoryDonut extends StatelessWidget {
                         width: 9,
                         height: 9,
                         decoration: BoxDecoration(
-                          color: _palette[i % _palette.length],
+                          color: _palette(colors)[i % 9],
                           shape: BoxShape.circle,
                         ),
                       ),

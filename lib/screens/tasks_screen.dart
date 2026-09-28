@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../components/analytics/stat_card.dart';
@@ -295,30 +294,15 @@ class _TasksScreenState extends State<TasksScreen> {
       );
     }
 
-    final start = tasks.startDateFilter;
-    final end = tasks.endDateFilter;
-
     final mainArea = Column(
       children: [
         _buildHeader(context, tasks),
         if (tasks.tasks.isNotEmpty) _buildKpiSection(tasks, colors),
-        if (start != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                end != null
-                    ? 'Date: ${DateFormat('MMM dd, yyyy').format(start)} - ${DateFormat('MMM dd, yyyy').format(end)}'
-                    : 'Date: ${DateFormat('MMM dd, yyyy').format(start)}',
-                style: TextStyle(fontSize: 13, color: colors.textSecondary),
-              ),
-            ),
-          ),
         FilterChipBar(
           gridView: _gridView,
           onViewChanged: (value) => setState(() => _gridView = value),
         ),
+        const ActiveFilterChipsRow(),
         Expanded(
           child: tasks.loading && tasks.tasks.isEmpty
               ? const Center(child: CircularProgressIndicator())
@@ -547,7 +531,10 @@ class _TasksScreenState extends State<TasksScreen> {
               task.id == _highlightedTaskId;
           final category = _categoryFor(task, settings);
           return GestureDetector(
-            key: highlighted ? _highlightKey : null,
+            // Key by task id so card state (expanded dropdown, subtask
+            // cache, highlight timer) is never reused across tasks when
+            // the list reorders or the provider refreshes after a save.
+            key: ValueKey<int?>(task.id),
             onTap: () => tasks.hasSelection
                 ? tasks.toggleSelection(task.id!)
                 : _openDialog(task),
@@ -579,7 +566,8 @@ class _TasksScreenState extends State<TasksScreen> {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GestureDetector(
-            key: highlighted ? _highlightKey : null,
+            // Same as the grid: one task = one element state.
+            key: ValueKey<int?>(task.id),
             onTap: () => tasks.hasSelection
                 ? tasks.toggleSelection(task.id!)
                 : _openDialog(task),

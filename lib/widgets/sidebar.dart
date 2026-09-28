@@ -48,33 +48,21 @@ class Sidebar extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Logo + title
+              // Logo + title (app identity also lives in the title bar; keep
+              // a smaller header here for the drawer variant).
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
                 child: Row(
                   children: [
-                    const AppLogo(size: 40),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppVersion.appName,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'v${AppVersion.version}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: colors.textTertiary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                    const AppLogo(size: 28),
+                    const SizedBox(width: 10),
+                    Text(
+                      AppVersion.appName,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: colors.textPrimary,
+                      ),
                     ),
                   ],
                 ),

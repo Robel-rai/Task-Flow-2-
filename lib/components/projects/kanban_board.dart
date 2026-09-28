@@ -187,7 +187,7 @@ class _KanbanColumn extends StatelessWidget {
                               data: task,
                               dragAnchorStrategy:
                                   pointerDragAnchorStrategy,
-                              feedback: _feedback(task),
+                              feedback: _feedback(context, task),
                               childWhenDragging: Opacity(
                                 opacity: 0.35,
                                 child: _KanbanTaskCard(task: task),
@@ -219,7 +219,8 @@ class _KanbanColumn extends StatelessWidget {
     );
   }
 
-  Widget _feedback(Task task) {
+  Widget _feedback(BuildContext context, Task task) {
+    final colors = Theme.of(context).extension<AppThemeColors>()!;
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -228,7 +229,7 @@ class _KanbanColumn extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surfaceDark,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppTheme.primary, width: 1.5),
+          border: Border.all(color: colors.primary, width: 1.5),
           boxShadow: const [
             BoxShadow(
                 color: Colors.black38, blurRadius: 12, offset: Offset(0, 4)),

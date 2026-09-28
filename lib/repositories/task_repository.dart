@@ -36,6 +36,7 @@ class TaskRepository {
     DateTime? startDate,
     DateTime? endDate,
     bool includeUnscheduled = false,
+    bool overdueOnly = false,
     String? sortBy,
     bool ascending = true,
     bool includeDeleted = false,
@@ -68,6 +69,10 @@ class TaskRepository {
     if (priorityFilter != null && priorityFilter.isNotEmpty) {
       where.add('priority = ?');
       args.add(priorityFilter);
+    }
+    if (overdueOnly) {
+      where.add("status != 'Completed' AND due_date IS NOT NULL AND due_date < ?");
+      args.add('${_dateString(DateTime.now())}T00:00:00');
     }
     if (startDate != null && endDate != null) {
       if (includeUnscheduled) {

@@ -9,6 +9,12 @@ import 'package:flutter/material.dart';
 ///   `final colors = Theme.of(context).extension<AppThemeColors>()!;`
 ///   `Container(color: colors.surface)`
 class AppThemeColors extends ThemeExtension<AppThemeColors> {
+  // ─── Accent ───
+  /// The active accent color. Follows the user's custom UI color and should
+  /// be used instead of the compile-time `AppTheme.primary` constant so all
+  /// accents (icons, borders, selected text, charts) track theme changes.
+  final Color primary;
+
   // ─── Core surfaces ───
   final Color background;
   final Color surface;
@@ -27,6 +33,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   final Color navItemInactiveText;
 
   const AppThemeColors({
+    required this.primary,
     required this.background,
     required this.surface,
     required this.surfaceVariant,
@@ -44,6 +51,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   //  DARK THEME — edit values here
   // ════════════════════════════════════════════
   factory AppThemeColors.dark() => const AppThemeColors(
+        primary: Color(0xFF2e2ef4),
         background: Color(0xFF101022),
         surface: Color(0xFF0F172A),
         surfaceVariant: Color(0xFF1E293B),
@@ -61,6 +69,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   //  LIGHT THEME — edit values here
   // ════════════════════════════════════════════
   factory AppThemeColors.light() => const AppThemeColors(
+        primary: Color(0xFF2e2ef4),
         background: Color(0xFFF8FAFC),
         surface: Color(0xFFFFFFFF),
         surfaceVariant: Color(0xFFF1F5F9),
@@ -76,6 +85,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
 
   @override
   AppThemeColors copyWith({
+    Color? primary,
     Color? background,
     Color? surface,
     Color? surfaceVariant,
@@ -89,6 +99,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     Color? navItemInactiveText,
   }) {
     return AppThemeColors(
+      primary: primary ?? this.primary,
       background: background ?? this.background,
       surface: surface ?? this.surface,
       surfaceVariant: surfaceVariant ?? this.surfaceVariant,
@@ -107,6 +118,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   AppThemeColors lerp(ThemeExtension<AppThemeColors>? other, double t) {
     if (other is! AppThemeColors) return this;
     return AppThemeColors(
+      primary: Color.lerp(primary, other.primary, t)!,
       background: Color.lerp(background, other.background, t)!,
       surface: Color.lerp(surface, other.surface, t)!,
       surfaceVariant: Color.lerp(surfaceVariant, other.surfaceVariant, t)!,

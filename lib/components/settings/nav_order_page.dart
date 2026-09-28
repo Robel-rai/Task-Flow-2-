@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../models/nav_page.dart';
 import '../../providers/settings_provider.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_theme.dart';
 
 /// The "Sidebar order" sub-setting: drag the page rows to rearrange the
 /// sidebar buttons. Changes apply live (the sidebar is visible alongside)
@@ -124,10 +123,10 @@ class _NavOrderRow extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.12),
+                color: colors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(page.icon, size: 18, color: AppTheme.primary),
+              child: Icon(page.icon, size: 18, color: colors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(

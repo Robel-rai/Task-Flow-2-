@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../models/project.dart';
+import '../../models/tag.dart';
 import '../../models/task.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
 
 /// The body of a search dropdown: a searching indicator, result sections
-/// (Tasks then Projects) with a keyboard highlight, a "Recent searches"
+/// (Tasks, Projects, Tags) with a keyboard highlight, a "Recent searches"
 /// section when the field is focused but empty, and quick-create actions
 /// when nothing matches. Shared by the dashboard dropdown and the global
 /// sidebar search panel so both look and behave identically.
@@ -21,6 +22,7 @@ class SearchResultsContent extends StatefulWidget {
     required this.onSelect,
     required this.onCreateTask,
     required this.onCreateProject,
+    this.tagResults = const [],
     this.showRecents = false,
     this.recentQueries = const [],
     this.onRecentTap,
@@ -30,6 +32,9 @@ class SearchResultsContent extends StatefulWidget {
   final String query;
   final List<Task> taskResults;
   final List<Project> projectResults;
+
+  /// Optional tag results, shown in their own section after projects.
+  final List<Tag> tagResults;
 
   /// Index into the flattened task-then-project list, or -1.
   final int selectedIndex;
@@ -106,7 +111,9 @@ class _SearchResultsContentState extends State<SearchResultsContent> {
       );
     } else if (widget.query.isEmpty && widget.showRecents) {
       content = _buildRecents(context);
-    } else if (widget.taskResults.isEmpty && widget.projectResults.isEmpty) {
+    } else if (widget.taskResults.isEmpty &&
+        widget.projectResults.isEmpty &&
+        widget.tagResults.isEmpty) {
       content = _buildCreateActions(context);
     } else {
       content = _buildResults(context);
@@ -128,6 +135,7 @@ class _SearchResultsContentState extends State<SearchResultsContent> {
 
   Widget _buildResults(BuildContext context) {
     final taskCount = widget.taskResults.length;
+    final projectCount = widget.projectResults.length;
 
     return SingleChildScrollView(
       controller: _scroll,
@@ -145,6 +153,12 @@ class _SearchResultsContentState extends State<SearchResultsContent> {
             for (var i = 0; i < widget.projectResults.length; i++)
               _projectTile(context, widget.projectResults[i], taskCount + i),
           ],
+          if (widget.tagResults.isNotEmpty) ...[
+            _sectionHeader(context, 'Tags'),
+            for (var i = 0; i < widget.tagResults.length; i++)
+              _tagTile(context, widget.tagResults[i],
+                  taskCount + projectCount + i),
+          ],
         ],
       ),
     );
@@ -156,7 +170,7 @@ class _SearchResultsContentState extends State<SearchResultsContent> {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Text(
-          'Start typing to search tasks and projects',
+          'Start typing to search tasks, projects, and tags',
           style: TextStyle(fontSize: 13, color: colors.textTertiary),
         ),
       );
@@ -201,10 +215,9 @@ class _SearchResultsContentState extends State<SearchResultsContent> {
                   style: TextStyle(fontSize: 12, color: colors.textTertiary),
                 ),
               ),
-            ),
-            ListTile(
+            ),            ListTile(
               dense: true,
-              leading: Icon(Icons.add_task, color: AppTheme.primary),
+              leading: Icon(Icons.add_task, color: colors.primary),
               title: Text('Create task "${widget.query}"'),
               onTap: widget.onCreateTask,
             ),
@@ -218,6 +231,25 @@ class _SearchResultsContentState extends State<SearchResultsContent> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _tagTile(BuildContext context, Tag tag, int index) {
+    final colors = Theme.of(context).extension<AppThemeColors>()!;
+    final selected = index == widget.selectedIndex;
+    return ListTile(
+      key: _optionKey(index),
+      dense: true,
+      selected: selected,
+      selectedTileColor: colors.surfaceVariant,
+      leading: Icon(Icons.label_outline, color: colors.primary),
+      title: Text(tag.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        'Filter tasks by this tag',
+        style: TextStyle(fontSize: 11, color: colors.textTertiary),
+      ),
+      trailing: Icon(Icons.chevron_right, size: 18, color: colors.textTertiary),
+      onTap: () => widget.onSelect(index),
     );
   }
 

@@ -6,13 +6,13 @@ import '../components/search/search_results_content.dart';
 import '../core/app_navigator.dart';
 import '../core/search_controller.dart';
 import '../models/project.dart';
+import '../models/tag.dart';
 import '../models/task.dart';
 import '../providers/projects_provider.dart';
 import '../providers/routines_provider.dart';
 import '../providers/tasks_provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 import 'task_dialog.dart';
 import '../components/projects/project_dialog.dart';
 import '../components/routines/routine_dialog.dart';
@@ -138,6 +138,8 @@ class _GlobalSearchOverlayState extends State<GlobalSearchOverlay> {
       _openTask(item);
     } else if (item is Project) {
       _openProject(item);
+    } else if (item is Tag) {
+      _openTag(item);
     } else if (_search.query.isNotEmpty) {
       _search.remember(_search.query);
     }
@@ -159,11 +161,25 @@ class _GlobalSearchOverlayState extends State<GlobalSearchOverlay> {
     widget.onClose();
   }
 
+  /// Jumps to the Tasks page with [tag] applied as the task filter.
+  void _openTag(Tag tag) {
+    final id = tag.id;
+    if (id == null) return;
+    _search.remember(_search.query);
+    AppNavigator.instance.goTo(1); // Tasks screen
+    widget.dialogContext.read<TasksProvider>().setTagFilter(id);
+    widget.onClose();
+  }
+
   void _onSelectResult(int index) {
     if (index < _search.taskResults.length) {
       _openTask(_search.taskResults[index]);
-    } else {
+    } else if (index <
+        _search.taskResults.length + _search.projectResults.length) {
       _openProject(_search.projectResults[index - _search.taskResults.length]);
+    } else {
+      _openTag(_search
+          .tagResults[index - _search.taskResults.length - _search.projectResults.length]);
     }
   }
 
@@ -252,7 +268,8 @@ class _GlobalSearchOverlayState extends State<GlobalSearchOverlay> {
                               textInputAction: TextInputAction.search,
                               autofocus: true,
                               decoration: InputDecoration(
-                                hintText: 'Search tasks, projects, or type a command...',
+                                hintText:
+                                  'Search tasks, projects, tags, or type a command...',
                                 prefixIcon: const Icon(Icons.search, size: 20),
                                 isDense: true,
                                 filled: true,
@@ -267,7 +284,7 @@ class _GlobalSearchOverlayState extends State<GlobalSearchOverlay> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                                  borderSide: BorderSide(color: colors.primary, width: 1.5),
                                 ),
                               ),
                             ),
@@ -285,30 +302,52 @@ class _GlobalSearchOverlayState extends State<GlobalSearchOverlay> {
                   Flexible(
                     child: ListenableBuilder(
                       listenable: _search,
-                      builder: (context, _) => Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_filteredCommands.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: Text('COMMANDS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: colors.textTertiary)),
-                            ),
-                            for (int i = 0; i < _filteredCommands.length; i++)
-                              ListTile(
-                                dense: true,
-                                leading: Icon(_filteredCommands[i].icon, size: 20, color: AppTheme.primary),
-                                title: Text(_filteredCommands[i].label, style: TextStyle(fontSize: 13, color: colors.textPrimary)),
-                                onTap: () => _executeCommand(_filteredCommands[i]),
-                              ),
-                            if (_search.query.isNotEmpty && _search.taskResults.isEmpty && _search.projectResults.isEmpty)
-                              const Divider(height: 1),
-                          ],
+                      builder: (context, _) => LayoutBuilder(
+                        builder: (context, constraints) {
+                          // The results section is capped at 320 px internally.
+                          // Give the commands list whatever height remains (at
+                          // least one row) so the panel can never overflow,
+                          // no matter how many commands match the query.
+                          const resultsMax = 320.0;
+                          const sectionChrome = 36.0; // COMMANDS header + divider
+                          final commandsMax =
+                              (constraints.maxHeight - resultsMax - sectionChrome)
+                                  .clamp(48.0, 240.0);
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_filteredCommands.isNotEmpty) ...[
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  child: Text('COMMANDS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: colors.textTertiary)),
+                                ),
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(maxHeight: commandsMax),
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        for (int i = 0; i < _filteredCommands.length; i++)
+                                          ListTile(
+                                            dense: true,
+                                            leading: Icon(_filteredCommands[i].icon, size: 20, color: colors.primary),
+                                            title: Text(_filteredCommands[i].label, style: TextStyle(fontSize: 13, color: colors.textPrimary)),
+                                            onTap: () => _executeCommand(_filteredCommands[i]),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (_search.query.isNotEmpty && _search.taskResults.isEmpty && _search.projectResults.isEmpty)
+                                  const Divider(height: 1),
+                              ],
                           SearchResultsContent(
                             searching: _search.searching,
                             query: _search.query,
                             taskResults: _search.taskResults,
                             projectResults: _search.projectResults,
+                            tagResults: _search.tagResults,
                             selectedIndex: _search.selectedIndex,
                             onSelect: _onSelectResult,
                             onCreateTask: _createTask,
@@ -318,6 +357,8 @@ class _GlobalSearchOverlayState extends State<GlobalSearchOverlay> {
                             onRecentTap: _onRecentTap,
                           ),
                         ],
+                      );
+                        },
                       ),
                     ),
                   ),

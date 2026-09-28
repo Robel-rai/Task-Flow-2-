@@ -25,6 +25,28 @@ class TagRepository {
     return Tag.fromMap(results.first);
   }
 
+  /// Name-prefix search for the global search bar (case-insensitive).
+  Future<List<Tag>> searchByName(String query, {int limit = 6}) async {
+    final db = await _database;
+    final results = await db.query('tags',
+        where: 'name LIKE ?',
+        whereArgs: ['%$query%'],
+        orderBy: 'name ASC',
+        limit: limit);
+    return results.map((m) => Tag.fromMap(m)).toList();
+  }
+
+  /// Deletes a tag and every task-tag link pointing at it in one
+  /// transaction. FK cascades are not enforced at runtime, so the
+  /// `task_tags` rows are removed explicitly first.
+  Future<void> deleteCompletely(int id) async {
+    final db = await _database;
+    await db.transaction((txn) async {
+      await txn.delete('task_tags', where: 'tag_id = ?', whereArgs: [id]);
+      await txn.delete('tags', where: 'id = ?', whereArgs: [id]);
+    });
+  }
+
   Future<int> insert(Tag tag) async {
     final db = await _database;
     return db.insert('tags', tag.toMap());

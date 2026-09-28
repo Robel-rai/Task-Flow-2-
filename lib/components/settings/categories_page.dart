@@ -3,24 +3,50 @@ import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../models/category.dart';
+import '../../models/tag.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/tasks_provider.dart';
+import '../../repositories/tag_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/tag_dialog.dart';
+import '../../widgets/tag_pill.dart';
 import 'category_dialog.dart';
 
-/// The Categories sub-setting: full category management (create, rename,
-/// recolor, delete). Opened from the Settings home via [onBack] to return.
-class CategoriesPage extends StatelessWidget {
+/// The "Categories and Tags" sub-setting: full category management
+/// (create, rename, recolor, delete) plus tag management (create, delete)
+/// rendered as pill-shaped chips below the categories section.
+/// Opened from the Settings home via [onBack] to return.
+class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key, required this.onBack});
 
   final VoidCallback onBack;
+
+  @override
+  State<CategoriesPage> createState() => _CategoriesPageState();
+}
+
+class _CategoriesPageState extends State<CategoriesPage> {
+  List<Tag> _tags = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTags();
+  }
+
+  Future<void> _loadTags() async {
+    final tags = await TagRepository().getAll();
+    if (mounted) setState(() => _tags = tags);
+  }
 
   void _showMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
+
+  // ─── Categories ───
 
   Future<void> _addCategory(BuildContext context) async {
     final settings = context.read<SettingsProvider>();
@@ -98,6 +124,60 @@ class CategoriesPage extends StatelessWidget {
     }
   }
 
+  // ─── Tags ───
+
+  Future<void> _addTag() async {
+    final result = await showDialog<Tag>(
+      context: context,
+      builder: (_) => const TagDialog(),
+    );
+    if (result == null) return;
+    try {
+      await TagRepository().insert(result);
+      await _loadTags();
+    } on DatabaseException {
+      if (!mounted) return;
+      _showMessage(context, 'A tag with that name already exists');
+    }
+  }
+
+  Future<void> _deleteTag(Tag tag) async {
+    final colors = Theme.of(context).extension<AppThemeColors>()!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: const Text('Delete Tag'),
+        content: Text(
+            'Delete "${tag.name}"? It will be removed from every task that uses it.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.rose),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await TagRepository().deleteCompletely(tag.id!);
+
+    // A filter pointing at the deleted tag would leave the tasks filter
+    // dropdown with no matching item — clear it.
+    if (mounted) {
+      final tasks = context.read<TasksProvider>();
+      if (tasks.tagFilter == tag.id) {
+        tasks.setTagFilter(null);
+      }
+    }
+    await _loadTags();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppThemeColors>()!;
@@ -119,7 +199,7 @@ class CategoriesPage extends StatelessWidget {
               IconButton(
                 tooltip: 'Back to settings',
                 icon: Icon(Icons.arrow_back, color: colors.textSecondary),
-                onPressed: onBack,
+                onPressed: widget.onBack,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -127,11 +207,11 @@ class CategoriesPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Categories',
+                    Text('Categories and Tags',
                         style: Theme.of(context).textTheme.titleLarge),
                     Text(
-                      'Used when creating tasks and filtering. '
-                      'Create your own or rename and recolor the defaults.',
+                      'Categories group your tasks; tags label them with '
+                      'flexible keywords you can search and filter by.',
                       style: TextStyle(
                           fontSize: 12, color: colors.textTertiary),
                       overflow: TextOverflow.ellipsis,
@@ -155,6 +235,10 @@ class CategoriesPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Categories section ──
+                Text('Categories',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 12),
                 Card(
                   margin: EdgeInsets.zero,
                   child: Column(
@@ -180,6 +264,66 @@ class CategoriesPage extends StatelessWidget {
                           ),
                         ),
                     ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Tags section ──
+                Text('Tags',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Pill-shaped labels you can attach to tasks '
+                                'and use as filters',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: colors.textTertiary),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              onPressed: _addTag,
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add tag'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (_tags.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(
+                              'No tags yet — click "Add tag" to create one',
+                              style: TextStyle(color: colors.textTertiary),
+                            ),
+                          )
+                        else
+                          // Pills sit side by side filling the row width and
+                          // wrap downward automatically.
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final tag in _tags)
+                                TagPill(
+                                  tag: tag,
+                                  onDelete: () => _deleteTag(tag),
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],

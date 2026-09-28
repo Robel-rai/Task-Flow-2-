@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../providers/shortcuts_provider.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_theme.dart';
 
 /// Settings sub-page for viewing and rebinding keyboard shortcuts.
 class ShortcutsPage extends StatefulWidget {
@@ -199,13 +198,13 @@ class _ShortcutRowState extends State<_ShortcutRow> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.12),
+                  color: colors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.primary, width: 1.5),
+                  border: Border.all(color: colors.primary, width: 1.5),
                 ),
                 child: Text(
                   _captured != null ? ShortcutsProvider.keySetToString(_captured!) : 'Press keys...',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primary),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colors.primary),
                 ),
               ),
             )

@@ -87,7 +87,7 @@ class AboutPage extends StatelessWidget {
                     children: [
                       ListTile(
                         leading:
-                            Icon(Icons.info_outline, color: AppTheme.primary),
+                            Icon(Icons.info_outline, color: colors.primary),
                         title: const Text('App Version',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
@@ -206,7 +206,7 @@ class _FeatureChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppTheme.primary),
+          Icon(icon, size: 16, color: colors.primary),
           const SizedBox(width: 6),
           Text(label, style: TextStyle(fontSize: 12, color: colors.textPrimary)),
         ],

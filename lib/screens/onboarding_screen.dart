@@ -138,12 +138,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 for (int i = 0; i < 3; i++)
                   AnimatedContainer(duration: const Duration(milliseconds: 250), margin: const EdgeInsets.only(right: 6),
                     width: i == _page ? 24 : 8, height: 8,
-                    decoration: BoxDecoration(color: i == _page ? AppTheme.primary : colors.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4)),
+                    decoration: BoxDecoration(color: i == _page ? colors.primary : colors.textTertiary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4)),
                   ),
               ]),
               const Spacer(),
               FilledButton(onPressed: _next,
-                style: FilledButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white,
+                style: FilledButton.styleFrom(backgroundColor: colors.primary, foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 child: Text(_page == 2 ? 'Get Started' : 'Next', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600))),
@@ -164,8 +164,8 @@ class _NameStep extends StatelessWidget {
     final colors = Theme.of(context).extension<AppThemeColors>()!;
     return Padding(padding: const EdgeInsets.symmetric(horizontal: 48),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(width: 100, height: 100, decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.10), shape: BoxShape.circle),
-          child: const Icon(Icons.person_outline, size: 48, color: AppTheme.primary)),
+        Container(width: 100, height: 100, decoration: BoxDecoration(color: colors.primary.withValues(alpha: 0.10), shape: BoxShape.circle),
+          child: const Icon(Icons.person_outline, size: 48, color: Color(0xFF2e2ef4))),
         const SizedBox(height: 32),
         Text('What should we call you?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: colors.textPrimary)),
         const SizedBox(height: 8),
@@ -176,7 +176,7 @@ class _NameStep extends StatelessWidget {
             fillColor: colors.surfaceVariant.withValues(alpha: 0.5),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: colors.border)),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: colors.border)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.primary, width: 1.5)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: colors.primary, width: 1.5)),
           ))),
       ]));
   }
@@ -221,13 +221,13 @@ class _ThemeOption extends StatelessWidget {
     return GestureDetector(onTap: onTap,
       child: AnimatedContainer(duration: const Duration(milliseconds: 200), width: 110, padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.primary.withValues(alpha: 0.12) : colors.surfaceVariant.withValues(alpha: 0.5),
+          color: selected ? colors.primary.withValues(alpha: 0.12) : colors.surfaceVariant.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: selected ? AppTheme.primary : colors.border, width: selected ? 2 : 1)),
+          border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 2 : 1)),
         child: Column(children: [
-          Icon(icon, size: 32, color: selected ? AppTheme.primary : colors.textSecondary),
+          Icon(icon, size: 32, color: selected ? colors.primary : colors.textSecondary),
           const SizedBox(height: 10),
-          Text(label, style: TextStyle(fontSize: 13, fontWeight: selected ? FontWeight.w600 : FontWeight.w500, color: selected ? AppTheme.primary : colors.textPrimary)),
+          Text(label, style: TextStyle(fontSize: 13, fontWeight: selected ? FontWeight.w600 : FontWeight.w500, color: selected ? colors.primary : colors.textPrimary)),
         ])));
   }
 }

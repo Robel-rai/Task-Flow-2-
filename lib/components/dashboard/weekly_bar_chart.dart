@@ -2,7 +2,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
-import '../../theme/app_theme.dart';
 
 /// Bar chart of completed tasks per day of the current week.
 /// [data] is keyed 0 = Monday … 6 = Sunday.
@@ -29,7 +28,7 @@ class WeeklyBarChart extends StatelessWidget {
           barRods: [
             BarChartRodData(
               toY: (data[i] ?? 0).toDouble(),
-              color: AppTheme.primary,
+              color: colors.primary,
               width: 16,
               borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(4)),
@@ -58,9 +57,13 @@ class WeeklyBarChart extends StatelessWidget {
                 minY: 0,
                 maxY: maxY,
                 barGroups: groups,
-                gridData: const FlGridData(
+                gridData: FlGridData(
                   drawVerticalLine: false,
                   horizontalInterval: 1,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: colors.border.withValues(alpha: 0.6),
+                    strokeWidth: 1,
+                  ),
                 ),
                 borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(

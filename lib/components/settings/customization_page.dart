@@ -6,6 +6,7 @@ import '../../providers/settings_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/color_wheel_picker.dart';
+import 'theme_mode_preview.dart';
 
 /// Dedicated page for customizing colors (dark & light mode) and fonts.
 class CustomizationPage extends StatefulWidget {
@@ -75,6 +76,13 @@ class _CustomizationPageState extends State<CustomizationPage> {
                 _FontSection(settings: settings),
                 const SizedBox(height: 32),
 
+                // ── Theme preview (dark vs light, side by side) ──
+                Text('Preview',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                const ThemeModePreviewCard(),
+                const SizedBox(height: 32),
+
                 // ── Color Theme ──
                 Text('Color Theme',
                     style: Theme.of(context).textTheme.titleMedium),
@@ -138,7 +146,7 @@ class _FontSection extends StatelessWidget {
           // Current font display
           ListTile(
             leading: Icon(Icons.font_download_outlined,
-                color: AppTheme.primary),
+                color: colors.primary),
             title: const Text('Current Font',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             subtitle: Text(
@@ -181,7 +189,7 @@ class _FontSection extends StatelessWidget {
           const Divider(height: 1),
           // Load custom font
           ListTile(
-            leading: Icon(Icons.upload_file, color: AppTheme.primary),
+            leading: Icon(Icons.upload_file, color: colors.primary),
             title: const Text('Load Custom Font',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             subtitle: const Text('Import a .ttf or .otf font file'),
@@ -230,7 +238,7 @@ class _FontChip extends StatelessWidget {
 
     return Material(
       color: selected
-          ? AppTheme.primary.withValues(alpha: 0.15)
+          ? colors.primary.withValues(alpha: 0.15)
           : colors.surfaceVariant.withValues(alpha: 0.5),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
@@ -241,7 +249,7 @@ class _FontChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: selected ? AppTheme.primary : colors.border,
+              color: selected ? colors.primary : colors.border,
               width: selected ? 2 : 1,
             ),
           ),
@@ -251,7 +259,7 @@ class _FontChip extends StatelessWidget {
               fontSize: 13,
               fontFamily: name,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? AppTheme.primary : colors.textPrimary,
+              color: selected ? colors.primary : colors.textPrimary,
             ),
           ),
         ),
@@ -319,7 +327,7 @@ class _TabButton extends StatelessWidget {
     final colors = Theme.of(context).extension<AppThemeColors>()!;
 
     return Material(
-      color: selected ? AppTheme.primary : Colors.transparent,
+      color: selected ? colors.primary : Colors.transparent,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -372,9 +380,13 @@ class _PresetGrid extends StatelessWidget {
         mainAxisSpacing: 10,
         childAspectRatio: 2.2,
       ),
-      itemCount: presets.length,
+      itemCount: presets.length + 1,
       itemBuilder: (context, index) {
-        final preset = presets[index];
+        // First cell: the user's personal theme (beside the built-ins).
+        if (index == 0) {
+          return _PersonalThemeTile(darkMode: darkMode, settings: settings);
+        }
+        final preset = presets[index - 1];
         final presetColors = darkMode ? preset.darkColors : preset.lightColors;
 
         return Material(
@@ -448,6 +460,7 @@ class _CustomColorSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppThemeColors>()!;
     final colorRoles = [
       _ColorRole('Background', 'bg', darkMode ? settings.darkBackground : settings.lightBackground),
       _ColorRole('Surface', 'surface', darkMode ? settings.darkSurface : settings.lightSurface),
@@ -477,7 +490,7 @@ class _CustomColorSection extends StatelessWidget {
                 Icon(
                   darkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
                   size: 18,
-                  color: AppTheme.primary,
+                  color: colors.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -563,7 +576,8 @@ class _ColorPickerRow extends StatelessWidget {
   }
 
   Future<void> _openColorPicker(BuildContext context) async {
-    final initial = role.current ?? _defaultForRole(role.key, darkMode);
+    final initial =
+        role.current ?? SettingsProvider.defaultForRole(role.key, darkMode);
     final picked = await showDialog<Color>(
       context: context,
       builder: (ctx) => _ColorPickerDialog(initialColor: initial),
@@ -574,42 +588,6 @@ class _ColorPickerRow extends StatelessWidget {
       await context.read<SettingsProvider>().setDarkColor(role.key, picked);
     } else {
       await context.read<SettingsProvider>().setLightColor(role.key, picked);
-    }
-  }
-
-  Color _defaultForRole(String key, bool dark) {
-    if (dark) {
-      return switch (key) {
-        'bg' => const Color(0xFF101022),
-        'surface' => const Color(0xFF0F172A),
-        'surfaceVariant' => const Color(0xFF1E293B),
-        'border' => const Color(0xFF1E293B),
-        'textPrimary' => const Color(0xFFF1F5F9),
-        'textSecondary' => const Color(0xFF94A3B8),
-        'textTertiary' => const Color(0xFF64748B),
-        'primary' => const Color(0xFF2e2ef4),
-        'sidebarBg' => const Color(0xFF101022),
-        'navActive' => const Color(0xFF1f1fba),
-        'navActiveText' => Colors.white,
-        'navInactiveText' => const Color(0xFF94A3B8),
-        _ => const Color(0xFF999999),
-      };
-    } else {
-      return switch (key) {
-        'bg' => const Color(0xFFF8FAFC),
-        'surface' => const Color(0xFFFFFFFF),
-        'surfaceVariant' => const Color(0xFFF1F5F9),
-        'border' => const Color(0xFFE2E8F0),
-        'textPrimary' => const Color(0xFF1E293B),
-        'textSecondary' => const Color(0xFF64748B),
-        'textTertiary' => const Color(0xFF94A3B8),
-        'primary' => const Color(0xFF2e2ef4),
-        'sidebarBg' => const Color(0xFFFFFFFF),
-        'navActive' => const Color(0xFF1f1fba),
-        'navActiveText' => Colors.white,
-        'navInactiveText' => const Color(0xFF64748B),
-        _ => const Color(0xFF999999),
-      };
     }
   }
 }
@@ -669,6 +647,117 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
                   ),
                 ],
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Personal Theme Tile ───
+
+/// Grid tile beside the built-in presets representing the user's own saved
+/// theme for the active Dark/Light tab. When nothing is saved yet, tapping
+/// snapshots the colors currently in effect. Once saved, tapping applies the
+/// snapshot back; the overflow menu can update or delete it.
+class _PersonalThemeTile extends StatelessWidget {
+  const _PersonalThemeTile({required this.darkMode, required this.settings});
+
+  final bool darkMode;
+  final SettingsProvider settings;
+
+  bool get _hasPersonal =>
+      darkMode ? settings.hasPersonalDarkTheme : settings.hasPersonalLightTheme;
+
+  Color? _personalColor(String role) => darkMode
+      ? settings.personalDarkColor(role)
+      : settings.personalLightColor(role);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppThemeColors>()!;
+
+    return Material(
+      color: colors.surface,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: () => _hasPersonal
+            ? settings.applyPersonalTheme(darkMode: darkMode)
+            : settings.savePersonalTheme(darkMode: darkMode),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: _hasPersonal ? colors.primary : colors.border,
+              width: _hasPersonal ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  gradient: _hasPersonal
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            _personalColor('primary') ?? colors.primary,
+                            _personalColor('bg') ?? colors.background,
+                          ],
+                        )
+                      : null,
+                  color: _hasPersonal ? null : colors.surfaceVariant,
+                ),
+                child: Icon(
+                  _hasPersonal ? Icons.person : Icons.add,
+                  size: 18,
+                  color: _hasPersonal ? Colors.white : colors.textTertiary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _hasPersonal ? 'Personal' : 'Personal (save current)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (_hasPersonal)
+                PopupMenuButton<String>(
+                  tooltip: 'Personal theme options',
+                  icon: Icon(Icons.more_vert,
+                      size: 18, color: colors.textTertiary),
+                  padding: EdgeInsets.zero,
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'apply':
+                        settings.applyPersonalTheme(darkMode: darkMode);
+                      case 'update':
+                        settings.savePersonalTheme(darkMode: darkMode);
+                      case 'delete':
+                        settings.deletePersonalTheme(darkMode: darkMode);
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                        value: 'apply', child: Text('Apply personal theme')),
+                    PopupMenuItem(
+                        value: 'update',
+                        child: Text('Update with current colors')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
+                ),
             ],
           ),
         ),
