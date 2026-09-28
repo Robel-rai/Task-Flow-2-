@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../database/app_database.dart';
 import '../components/settings/about_page.dart';
+import '../components/settings/backup_page.dart';
 import '../components/settings/categories_page.dart';
 import '../components/settings/customization_page.dart';
 import '../components/settings/focus_preferences_page.dart';
@@ -20,6 +21,7 @@ import '../screens/onboarding_screen.dart';
 import '../core/event_bus.dart';
 import '../providers/analytics_provider.dart';
 import '../providers/tasks_provider.dart';
+import '../services/auto_backup_service.dart';
 import '../services/backup_service.dart';
 import '../services/notification_service.dart';
 import '../services/reporting_service.dart';
@@ -44,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showAbout = false;
   bool _showShortcuts = false;
   bool _showUiSound = false;
+  bool _showBackup = false;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +85,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onBack: () => setState(() => _showAbout = false),
       );
     }
+    if (_showBackup) {
+      return BackupPage(
+        onBack: () => setState(() => _showBackup = false),
+      );
+    }
     return _SettingsHome(
       onOpenCategories: () => setState(() => _showCategories = true),
       onOpenNavOrder: () => setState(() => _showNavOrder = true),
@@ -90,6 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onOpenAbout: () => setState(() => _showAbout = true),
       onOpenShortcuts: () => setState(() => _showShortcuts = true),
       onOpenUiSound: () => setState(() => _showUiSound = true),
+      onOpenBackup: () => setState(() => _showBackup = true),
     );
   }
 }
@@ -103,6 +112,7 @@ class _SettingsHome extends StatefulWidget {
     required this.onOpenAbout,
     required this.onOpenShortcuts,
     required this.onOpenUiSound,
+    required this.onOpenBackup,
   });
 
   final VoidCallback onOpenCategories;
@@ -112,6 +122,7 @@ class _SettingsHome extends StatefulWidget {
   final VoidCallback onOpenAbout;
   final VoidCallback onOpenShortcuts;
   final VoidCallback onOpenUiSound;
+  final VoidCallback onOpenBackup;
 
   @override
   State<_SettingsHome> createState() => _SettingsHomeState();
@@ -1734,6 +1745,56 @@ class _SettingsHomeState extends State<_SettingsHome> {
                 // ── Backup & Reset ──
                 Text('Backup & Reset',
                     style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      ListenableBuilder(
+                        listenable: context.read<AutoBackupService>(),
+                        builder: (context, _) {
+                          final auto = context.read<AutoBackupService>();
+                          return ListTile(
+                            leading: Icon(Icons.auto_awesome,
+                                color: AppTheme.indigo),
+                            title: const Text('Automatic Backup & Restore',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600)),
+                            subtitle: Text(
+                              auto.enabled
+                                  ? 'On · backup ${auto.backupTimeLabel} · '
+                                      'restore ${auto.restoreEnabled ? auto.restoreTimeLabel : 'off'}'
+                                  : 'Off',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.textTertiary),
+                            ),
+                            trailing: Switch(
+                              value: auto.enabled,
+                              onChanged: auto.setEnabled,
+                            ),
+                            onTap: widget.onOpenBackup,
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(Icons.settings_backup_restore,
+                            color: colors.primary),
+                        title: const Text('Backup & Restore Settings',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600)),
+                        subtitle: const Text(
+                            'Schedules, backup folder, history, and manual '
+                            'backup / restore'),
+                        trailing: Icon(Icons.chevron_right,
+                            color: colors.textTertiary),
+                        onTap: widget.onOpenBackup,
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [

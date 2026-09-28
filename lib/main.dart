@@ -17,6 +17,7 @@ import 'providers/settings_provider.dart';
 import 'providers/tasks_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/shortcuts_provider.dart';
+import 'services/auto_backup_service.dart';
 import 'theme/app_theme.dart';
 
 
@@ -110,6 +111,8 @@ class TaskFlowApp extends StatelessWidget {
             create: (_) => AnalyticsProvider()..initialize()),
         ChangeNotifierProvider(
             create: (_) => ShortcutsProvider()..initialize()),
+        ChangeNotifierProvider(
+            create: (_) => AutoBackupService()..initialize()),
       ],
       child: const _ThemeBuilder(),
     );

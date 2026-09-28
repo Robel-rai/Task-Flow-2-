@@ -19,6 +19,7 @@ import 'screens/projects_screen.dart';
 import 'screens/routines_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/tasks_screen.dart';
+import 'services/auto_backup_service.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/sidebar.dart';
@@ -64,6 +65,8 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     _startNotificationTimer();
+    // Automatic backup & restore scheduler (runs while the app is open).
+    context.read<AutoBackupService>().start();
   }
 
   @override
