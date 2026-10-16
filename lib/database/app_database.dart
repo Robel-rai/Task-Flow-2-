@@ -53,7 +53,10 @@ class AppDatabase {
   /// class doc for the per-mode rules).
   static Future<String> _resolveDatabaseDirectory() async {
     final supportDir = (await getApplicationSupportDirectory()).path;
-    if (kDebugMode) return supportDir;
+    if (kDebugMode) {
+      await _adoptLegacyDevDatabase(supportDir);
+      return supportDir;
+    }
 
     try {
       final exeDir = p.dirname(Platform.resolvedExecutable);
@@ -71,6 +74,63 @@ class AppDatabase {
       // Install dir not writable (Program Files without elevation) —
       // keep the pre-2.x application-support behavior.
       return supportDir;
+    }
+  }
+
+  /// One-time adoption of a pre-existing dev database from the legacy
+  /// shared identity folder.
+  ///
+  /// Before the debug build got its own exe identity ("TaskFlow Dev"),
+  /// `taskflow_dev.db` lived in `%APPDATA%\<company>\TaskFlow` — the same
+  /// folder the release app used for its shared_preferences. After the
+  /// identity split, the debug build resolves its support directory to
+  /// `%APPDATA%\<company>\TaskFlow Dev`, so the old test database would be
+  /// stranded. This copies it (plus WAL sidecars) into the new folder
+  /// once, guarded by the [devDbAdoptedFlag] preference.
+  static Future<void> _adoptLegacyDevDatabase(String newDir) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(devDbAdoptedFlag) ?? false) return;
+
+      final target = File(p.join(newDir, 'taskflow_dev.db'));
+      if (target.existsSync()) {
+        await prefs.setBool(devDbAdoptedFlag, true);
+        return;
+      }
+
+      // The legacy folder is the sibling without the " Dev" suffix.
+      final legacyDir = p.join(p.dirname(newDir), 'TaskFlow');
+      final legacy = File(p.join(legacyDir, 'taskflow_dev.db'));
+      if (!legacy.existsSync()) {
+        await prefs.setBool(devDbAdoptedFlag, true);
+        return;
+      }
+
+      final tmp = File(p.join(newDir, 'taskflow_dev.db.migrating'));
+      try {
+        await legacy.copy(tmp.path);
+        await tmp.rename(target.path);
+        // Carry over any WAL sidecar files so a hot journal is not lost.
+        for (final suffix in const ['-wal', '-shm']) {
+          final side = File(p.join(legacyDir, 'taskflow_dev.db$suffix'));
+          if (side.existsSync()) {
+            await side.copy(p.join(newDir, 'taskflow_dev.db$suffix'));
+          }
+        }
+        await prefs.setBool(devDbAdoptedFlag, true);
+      } catch (_) {
+        // Leave the flag unset so the next launch can retry.
+        if (tmp.existsSync()) {
+          try {
+            await tmp.delete();
+          } catch (_) {
+            // Ignore — a stale temp file is harmless.
+          }
+        }
+      }
+    } catch (_) {
+      // Best effort: on failure the dev build simply starts with an empty
+      // database in its new home; the legacy file stays untouched.
     }
   }
 
@@ -113,6 +173,10 @@ class AppDatabase {
   static void setDatabaseForTesting(Database db) {
     _db = db;
   }
+
+  /// SharedPreferences flag marking the one-time legacy dev-database
+  /// adoption (see [_adoptLegacyDevDatabase]) as done.
+  static const devDbAdoptedFlag = 'dev_db_adopted';
 
   /// SharedPreferences flag marking the one-time ghost-data cleanup done.
   static const ghostDataCleanedFlag = 'ghost_data_cleaned';

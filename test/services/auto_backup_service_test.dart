@@ -45,11 +45,14 @@ void main() {
     return service.backupNow();
   }
 
-  /// A backup time two minutes in the past (always due today).
+  /// A backup/restore time that is always already due today: the current
+  /// minute. Using "2 minutes ago" broke around midnight (23:59 from
+  /// yesterday is *before* 00:01 today), while the current minute is due
+  /// on any day — `_isTimeBefore` treats "now or later" as due.
   Future<void> setDueTime({required bool restore}) async {
-    final past = DateTime.now().subtract(const Duration(minutes: 2));
-    final hhmm = '${past.hour.toString().padLeft(2, '0')}:'
-        '${past.minute.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+    final hhmm = '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}';
     if (restore) {
       await service.setRestoreTime(hhmm);
     } else {
@@ -123,10 +126,18 @@ void main() {
   test('tick skips backup before the scheduled time', () async {
     await tasks.insert(Task(title: 'Future tick'));
 
+    // Schedule the run a few minutes ahead. If that would wrap past
+    // midnight, aim for tomorrow's slot on tomorrow's weekday instead,
+    // so the scheduled moment is genuinely in the future in all cases.
     final now = DateTime.now();
-    final inTwoHours =
-        '${((now.hour + 2) % 24).toString().padLeft(2, '0')}:00';
-    await service.setBackupTime(inTwoHours);
+    var target = now.add(const Duration(minutes: 5));
+    if (target.day != now.day) {
+      await service.setBackupDays({target.weekday});
+      target = DateTime(target.year, target.month, target.day, 0, 5);
+    }
+    final hhmm = '${target.hour.toString().padLeft(2, '0')}:'
+        '${target.minute.toString().padLeft(2, '0')}';
+    await service.setBackupTime(hhmm);
 
     await service.tick();
     expect(service.listBackups(), isEmpty);

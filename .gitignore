@@ -80,7 +80,9 @@ flutter_*.log
 *.log
 *.tlog
 *.lastbuildstate
+# Build manifests only — keep the tracked Flutter runner manifest
 *.manifest
+!windows/runner/runner.exe.manifest
 *.NativeCodeAnalysis.xml
 *.NativeCodeAnalysis.report.xml
 *.NativeCodeAnalysis.xml

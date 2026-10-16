@@ -72,6 +72,16 @@ IDI_APP_ICON            ICON                    "resources\\main_app_icon.ico"
 #define VERSION_AS_STRING "1.0.0"
 #endif
 
+// Product name differs by build type so that debug/dev builds get their
+// own per-user settings directory (shared_preferences, path_provider):
+// the plugin package name comes from the exe VersionInfo. Release keeps
+// "TaskFlow"; debug builds become "TaskFlow Dev".
+#ifdef _DEBUG
+#define PRODUCT_NAME "TaskFlow Dev"
+#else
+#define PRODUCT_NAME "TaskFlow"
+#endif
+
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION VERSION_AS_NUMBER
  PRODUCTVERSION VERSION_AS_NUMBER
@@ -90,12 +100,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "Yared" "\0"
-            VALUE "FileDescription", "TaskFlow" "\0"
+            VALUE "FileDescription", PRODUCT_NAME "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "TaskFlow" "\0"
+            VALUE "InternalName", PRODUCT_NAME "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 Yared. All rights reserved." "\0"
             VALUE "OriginalFilename", "taskflow.exe" "\0"
-            VALUE "ProductName", "TaskFlow" "\0"
+            VALUE "ProductName", PRODUCT_NAME "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
