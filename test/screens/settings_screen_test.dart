@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,6 +86,19 @@ void main() {
     expect(find.text('App preferences'), findsOneWidget);
     expect(
         find.widgetWithText(ListTile, 'Categories and Tags'), findsOneWidget);
+
+    // The General card hosts the launch-at-startup toggle, off by default
+    // (tests run with fresh preferences and never register a real entry).
+    final startupToggle = find.widgetWithText(
+        SwitchListTile, 'Launch at Windows startup');
+    expect(startupToggle, findsOneWidget);
+    final startupSwitch = tester.widget<SwitchListTile>(startupToggle);
+    expect(startupSwitch.value, isFalse);
+    if (Platform.isWindows) {
+      // The switch must be interactive — a disabled one would mean the
+      // settings wiring broke.
+      expect(startupSwitch.onChanged, isNotNull);
+    }
   });
 
   testWidgets('add a new category and see it in the list', (tester) async {

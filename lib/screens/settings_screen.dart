@@ -25,6 +25,7 @@ import '../services/auto_backup_service.dart';
 import '../services/backup_service.dart';
 import '../services/notification_service.dart';
 import '../services/reporting_service.dart';
+import '../services/startup_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../providers/theme_provider.dart';
@@ -130,6 +131,11 @@ class _SettingsHome extends StatefulWidget {
 
 class _SettingsHomeState extends State<_SettingsHome> {
   final NotificationService _notifications = NotificationService(toasts: false);
+  final StartupService _startup = StartupService();
+
+  // ── Launch at Windows startup ──
+  bool _launchAtStartup = false;
+  bool _startupSupported = true;
 
   bool _breakReminders = true;
   bool _routineReminders = true;
@@ -158,6 +164,8 @@ class _SettingsHomeState extends State<_SettingsHome> {
   }
 
   Future<void> _loadToggles() async {
+    final startupSupported = _startup.isSupported;
+    final launchAtStartup = await _startup.isEnabled();
     final breakOn = await _notifications.breakEnabled;
     final routinesOn = await _notifications.routinesEnabled;
     final dueDateOn = await _notifications.dueDateEnabled;
@@ -174,6 +182,8 @@ class _SettingsHomeState extends State<_SettingsHome> {
     final ddAdvance = await _notifications.dueDateAdvanceMinutes;
     if (!mounted) return;
     setState(() {
+      _startupSupported = startupSupported;
+      _launchAtStartup = launchAtStartup;
       _breakReminders = breakOn;
       _routineReminders = routinesOn;
       _dueDateReminders = dueDateOn;
@@ -186,9 +196,22 @@ class _SettingsHomeState extends State<_SettingsHome> {
       _dueDateStartHour = ddStartH;
       _dueDateStartMinute = ddStartM;
       _dueDateIntervalHours = ddInterval;
-      _dueDateRepeatCount = ddRepeat;
-      _dueDateAdvanceMinutes = ddAdvance;
+      _dueDateRepeatCount = ddRepeat;                      _dueDateAdvanceMinutes = ddAdvance;
     });
+  }
+
+  /// Flips the "launch at Windows startup" switch, reverting it when the
+  /// registry change fails so the UI never claims something untrue.
+  Future<void> _setLaunchAtStartup(bool enabled) async {
+    final previous = _launchAtStartup;
+    setState(() => _launchAtStartup = enabled);
+    try {
+      await _startup.setEnabled(enabled);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _launchAtStartup = previous);
+      _snack('Could not ${enabled ? 'enable' : 'disable'} launch at startup: $e');
+    }
   }
 
   void _snack(String message) {
@@ -1439,6 +1462,25 @@ class _SettingsHomeState extends State<_SettingsHome> {
                   margin: EdgeInsets.zero,
                   child: Column(
                     children: [
+                      SwitchListTile(
+                        secondary: Icon(Icons.power_settings_new,
+                            color: colors.primary),
+                        title: const Text('Launch at Windows startup',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                          _startupSupported
+                              ? 'Start TaskFlow automatically when you sign '
+                                  'in to Windows'
+                              : 'Only available on Windows',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        value: _launchAtStartup,
+                        onChanged: _startupSupported
+                            ? (v) => _setLaunchAtStartup(v)
+                            : null,
+                      ),
+                      const Divider(height: 1),
                       ListTile(
                         leading: Icon(Icons.label_outline,
                             color: colors.primary),

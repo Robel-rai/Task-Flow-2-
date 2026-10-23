@@ -18,6 +18,7 @@ import 'providers/tasks_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/shortcuts_provider.dart';
 import 'services/auto_backup_service.dart';
+import 'services/startup_service.dart';
 import 'theme/app_theme.dart';
 
 
@@ -71,6 +72,11 @@ void main() async {
 
   // Remove known ghost/test data that may have been imported from v1.
   await AppDatabase.cleanupGhostData();
+
+  // Keep the "launch at Windows startup" entry in sync with the stored
+  // preference — this repairs the path after an update or reinstall moves
+  // the executable. Never throws, so a registry problem cannot block launch.
+  await StartupService().reconcile();
 
   // Custom in-app title bar: hide the native one before the window is shown
   // (drag-to-move, snap, double-click maximize are handled by the app).
